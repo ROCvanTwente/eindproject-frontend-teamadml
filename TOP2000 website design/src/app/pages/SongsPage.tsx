@@ -1,0 +1,96 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Search, Music } from 'lucide-react';
+import { mockSongs } from '../data/mockData';
+
+export function SongsPage() {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredSongs = mockSongs
+    .filter(song =>
+      song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      song.artistName.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => a.title.localeCompare(b.title));
+
+  return (
+    <div className="pb-12">
+      {/* Page Header */}
+      <section className="bg-white py-8 border-b border-border">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Nummers</h1>
+          <p className="text-muted-foreground">
+            Alle nummers die ooit in de TOP 2000 hebben gestaan
+          </p>
+        </div>
+      </section>
+
+      <div className="container mx-auto px-4 mt-8">
+        {/* Search */}
+        <div className="max-w-2xl mx-auto mb-8">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Zoek op titel of artiest..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+            />
+          </div>
+        </div>
+
+        {/* Results Summary */}
+        <div className="mb-6 text-muted-foreground text-center">
+          {filteredSongs.length} {filteredSongs.length === 1 ? 'nummer' : 'nummers'} gevonden
+        </div>
+
+        {/* Songs List */}
+        <div className="max-w-4xl mx-auto space-y-3">
+          {filteredSongs.map(song => (
+            <Link
+              key={song.id}
+              to={`/nummer/${song.id}`}
+              className="block bg-card border border-border p-4 hover:shadow-sm transition-all group"
+            >
+              <div className="flex items-center gap-4">
+                {song.albumCover ? (
+                  <img
+                    src={song.albumCover}
+                    alt={song.title}
+                    className="w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-16 h-16 md:w-20 md:h-20 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Music className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-grow min-w-0">
+                  <h3 className="font-bold text-lg group-hover:text-primary transition-colors truncate">
+                    {song.title}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {song.artistName} • {song.year}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {song.timesListed} {song.timesListed === 1 ? 'keer' : 'keer'} genoteerd
+                  </p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {filteredSongs.length === 0 && (
+          <div className="text-center py-16">
+            <Music className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Geen nummers gevonden</h3>
+            <p className="text-muted-foreground">
+              Probeer een andere zoekterm
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
