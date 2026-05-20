@@ -1,4 +1,4 @@
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Music, Search, Menu, X, ChevronDown, User, LogIn, ListMusic, Shield } from 'lucide-react';
 import { useState } from 'react';
 
@@ -13,9 +13,17 @@ const djList = [
 ];
 
 export function Layout() {
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [djMenuOpen, setDjMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -35,16 +43,36 @@ export function Layout() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-8">
-              <Link to="/" className="text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide">
+              <Link
+                to="/"
+                className={`text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide ${
+                  isActive('/') ? 'text-primary border-b-2 border-primary pb-1' : ''
+                }`}
+              >
                 Home
               </Link>
-              <Link to="/lijst" className="text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide">
+              <Link
+                to="/lijst"
+                className={`text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide ${
+                  isActive('/lijst') ? 'text-primary border-b-2 border-primary pb-1' : ''
+                }`}
+              >
                 De Lijst
               </Link>
-              <Link to="/artiesten" className="text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide">
+              <Link
+                to="/artiesten"
+                className={`text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide ${
+                  isActive('/artiesten') || isActive('/artiest') ? 'text-primary border-b-2 border-primary pb-1' : ''
+                }`}
+              >
                 Artiesten
               </Link>
-              <Link to="/nummers" className="text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide">
+              <Link
+                to="/nummers"
+                className={`text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide ${
+                  isActive('/nummers') || isActive('/nummer') ? 'text-primary border-b-2 border-primary pb-1' : ''
+                }`}
+              >
                 Nummers
               </Link>
 
@@ -84,10 +112,20 @@ export function Layout() {
                 )}
               </div>
 
-              <Link to="/geschiedenis" className="text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide">
+              <Link
+                to="/geschiedenis"
+                className={`text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide ${
+                  isActive('/geschiedenis') ? 'text-primary border-b-2 border-primary pb-1' : ''
+                }`}
+              >
                 Geschiedenis
               </Link>
-              <Link to="/statistieken" className="text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide">
+              <Link
+                to="/statistieken"
+                className={`text-sm font-semibold hover:text-primary transition-colors cursor-pointer uppercase tracking-wide ${
+                  isActive('/statistieken') ? 'text-primary border-b-2 border-primary pb-1' : ''
+                }`}
+              >
                 Statistieken
               </Link>
             </nav>
@@ -176,28 +214,36 @@ export function Layout() {
             <nav className="lg:hidden py-4 border-t border-border">
               <Link
                 to="/"
-                className="block py-2 hover:text-primary transition-colors"
+                className={`block py-2 hover:text-primary transition-colors ${
+                  isActive('/') ? 'text-primary font-semibold' : ''
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Home
               </Link>
               <Link
                 to="/lijst"
-                className="block py-2 hover:text-primary transition-colors"
+                className={`block py-2 hover:text-primary transition-colors ${
+                  isActive('/lijst') ? 'text-primary font-semibold' : ''
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 TOP 2000 Lijst
               </Link>
               <Link
                 to="/artiesten"
-                className="block py-2 hover:text-primary transition-colors"
+                className={`block py-2 hover:text-primary transition-colors ${
+                  isActive('/artiesten') || isActive('/artiest') ? 'text-primary font-semibold' : ''
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Artiesten
               </Link>
               <Link
                 to="/nummers"
-                className="block py-2 hover:text-primary transition-colors"
+                className={`block py-2 hover:text-primary transition-colors ${
+                  isActive('/nummers') || isActive('/nummer') ? 'text-primary font-semibold' : ''
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Nummers
@@ -226,35 +272,45 @@ export function Layout() {
               </div>
               <Link
                 to="/geschiedenis"
-                className="block py-2 hover:text-primary transition-colors"
+                className={`block py-2 hover:text-primary transition-colors ${
+                  isActive('/geschiedenis') ? 'text-primary font-semibold' : ''
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Geschiedenis
               </Link>
               <Link
                 to="/statistieken"
-                className="block py-2 hover:text-primary transition-colors"
+                className={`block py-2 hover:text-primary transition-colors ${
+                  isActive('/statistieken') ? 'text-primary font-semibold' : ''
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Statistieken
               </Link>
               <Link
                 to="/faq"
-                className="block py-2 hover:text-primary transition-colors"
+                className={`block py-2 hover:text-primary transition-colors ${
+                  isActive('/faq') ? 'text-primary font-semibold' : ''
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 FAQ
               </Link>
               <Link
                 to="/contact"
-                className="block py-2 hover:text-primary transition-colors"
+                className={`block py-2 hover:text-primary transition-colors ${
+                  isActive('/contact') ? 'text-primary font-semibold' : ''
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Contact
               </Link>
               <Link
                 to="/playlists"
-                className="block py-2 hover:text-primary transition-colors mt-2 pt-4 border-t border-border"
+                className={`block py-2 hover:text-primary transition-colors mt-2 pt-4 border-t border-border ${
+                  isActive('/playlists') || isActive('/playlist') ? 'text-primary font-semibold' : ''
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Mijn Playlists
@@ -320,26 +376,26 @@ export function Layout() {
             <div>
               <h4 className="font-semibold mb-4">NPO Radio 2</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Live luisteren</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Programma's</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">DJ's</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Podcasts</a></li>
+                <li><a href="https://www.nporadio2.nl/live" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Live luisteren</a></li>
+                <li><Link to="/programma" className="hover:text-foreground transition-colors">Programma's</Link></li>
+                <li><Link to="/artiesten" className="hover:text-foreground transition-colors">Artiesten</Link></li>
+                <li><a href="https://www.nporadio2.nl/podcasts" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Podcasts</a></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-semibold mb-4">Service</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Privacy</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Cookies</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Voorwaarden</a></li>
+                <li><Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link></li>
+                <li><Link to="/faq" className="hover:text-foreground transition-colors">FAQ</Link></li>
+                <li><Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link></li>
+                <li><Link to="/voorwaarden" className="hover:text-foreground transition-colors">Voorwaarden</Link></li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 NPO Radio 2. Onderdeel van de Nederlandse Publieke Omroep.</p>
+            <p>&copy; 2026 NPO Radio 2. Onderdeel van de Nederlandse Publieke Omroep.</p>
           </div>
         </div>
       </footer>

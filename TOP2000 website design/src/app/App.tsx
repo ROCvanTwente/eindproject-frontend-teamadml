@@ -19,6 +19,8 @@ import { AdminSongsPage } from './pages/AdminSongsPage';
 import { PlaylistsPage } from './pages/PlaylistsPage';
 import { CreatePlaylistPage } from './pages/CreatePlaylistPage';
 import { PlaylistDetailPage } from './pages/PlaylistDetailPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
 
 export default function App() {
   return (
@@ -42,6 +44,8 @@ export default function App() {
           <Route path="faq" element={<FAQPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="statistieken" element={<StatisticsPage />} />
+          <Route path="privacy" element={<PrivacyPage />} />
+          <Route path="voorwaarden" element={<TermsPage />} />
           <Route path="playlists" element={<PlaylistsPage />} />
           <Route path="playlists/new" element={<CreatePlaylistPage />} />
           <Route path="playlist/:id" element={<PlaylistDetailPage />} />
