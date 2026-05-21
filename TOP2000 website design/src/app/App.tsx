@@ -110,8 +110,13 @@ export default function App() {
           BACKEND_ENDPOINTS.map(({ label, url }) => fetchEndpoint(label, url))
         );
 
-        const message = results.map(result => result.message).join('\n');
-        window.alert(message);
+        console.info('Backend endpoint check finished', {
+          results: results.map(result => ({
+            endpoint: result.label,
+            url: result.url,
+            message: result.message,
+          })),
+        });
       } catch (error) {
         const originHint = currentOrigin !== ALLOWED_FRONTEND_ORIGIN
           ? `Likely CORS issue: backend currently allows ${ALLOWED_FRONTEND_ORIGIN}, but this app is running from ${currentOrigin}.`
@@ -123,7 +128,6 @@ export default function App() {
           frontendOrigin: currentOrigin,
           allowedFrontendOrigin: ALLOWED_FRONTEND_ORIGIN,
         });
-        window.alert(message);
       }
     };
 
