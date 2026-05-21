@@ -25,12 +25,11 @@ import { TermsPage } from './pages/TermsPage';
 
 const BACKEND_URL = 'https://top2000teamadml.runasp.net';
 const ALLOWED_FRONTEND_ORIGIN = 'https://eindproject-frontend-teamadml.vercel.app';
-const TOP2000_YEAR = 2024;
 const BACKEND_ENDPOINTS = [
   { label: 'GET /api/artists', url: `${BACKEND_URL}/api/artists` },
   { label: 'GET /api/artists/search?name=queen', url: `${BACKEND_URL}/api/artists/search?name=queen` },
   { label: 'GET /api/songs', url: `${BACKEND_URL}/api/songs` },
-  { label: `GET /api/top2000/${TOP2000_YEAR}`, url: `${BACKEND_URL}/api/top2000/${TOP2000_YEAR}` },
+  { label: 'GET /api/top2000', url: `${BACKEND_URL}/api/top2000` },
 ];
 
 export default function App() {
