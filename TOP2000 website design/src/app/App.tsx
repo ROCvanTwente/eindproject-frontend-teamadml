@@ -27,7 +27,6 @@ const BACKEND_URL = 'https://top2000teamadml.runasp.net';
 const ALLOWED_FRONTEND_ORIGIN = 'https://eindproject-frontend-teamadml.vercel.app';
 const BACKEND_ENDPOINTS = [
   { label: 'GET /api/artists', url: `${BACKEND_URL}/api/artists` },
-  { label: 'GET /api/artists/search?name=queen', url: `${BACKEND_URL}/api/artists/search?name=queen` },
   { label: 'GET /api/songs', url: `${BACKEND_URL}/api/songs` },
   { label: 'GET /api/top2000', url: `${BACKEND_URL}/api/top2000` },
 ];
