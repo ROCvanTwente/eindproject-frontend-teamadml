@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { HomePage } from './pages/HomePage';
@@ -22,7 +23,45 @@ import { PlaylistDetailPage } from './pages/PlaylistDetailPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 
+const BACKEND_URL = 'https://top2000teamadml.runasp.net';
+
 export default function App() {
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const checkBackendConnection = async () => {
+      try {
+        const response = await fetch(BACKEND_URL, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const message = `Backend call failed with status ${response.status} ${response.statusText}`.trim();
+          console.error(message);
+          window.alert(message);
+          return;
+        }
+
+        const message = `Backend call succeeded: ${BACKEND_URL}`;
+        console.info(message);
+        window.alert(message);
+      } catch (error) {
+        const message = error instanceof Error
+          ? `Backend call failed: ${error.message}`
+          : 'Backend call failed due to an unknown error.';
+        console.error(message, error);
+        window.alert(message);
+      }
+    };
+
+    void checkBackendConnection();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
   return (
     <BrowserRouter
       future={{
