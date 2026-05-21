@@ -87,27 +87,29 @@ export function Layout() {
                   <ChevronDown className="w-3 h-3" />
                 </button>
                 {djMenuOpen && (
-                  <div className="absolute top-full left-0 mt-2 bg-white border border-border shadow-xl py-2 w-56 z-50">
-                    <a
-                      href="https://nl.wikipedia.org/wiki/Bart_Arens"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block px-4 py-3 hover:bg-secondary transition-colors text-sm font-semibold text-primary"
-                    >
-                      Openingsact: Bart Arens
-                    </a>
-                    <div className="border-t border-border my-1"></div>
-                    {djList.map(dj => (
+                  <div className="absolute top-full left-0 pt-2 z-50">
+                    <div className="bg-white border border-border shadow-xl py-2 w-56 rounded-lg">
                       <a
-                        key={dj.name}
-                        href={dj.wiki}
+                        href="https://nl.wikipedia.org/wiki/Bart_Arens"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block px-4 py-2 hover:bg-secondary transition-colors text-sm"
+                        className="block px-4 py-3 hover:bg-secondary transition-colors text-sm font-semibold text-primary"
                       >
-                        {dj.name}
+                        Openingsact: Bart Arens
                       </a>
-                    ))}
+                      <div className="border-t border-border my-1"></div>
+                      {djList.map(dj => (
+                        <a
+                          key={dj.name}
+                          href={dj.wiki}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block px-4 py-2 hover:bg-secondary transition-colors text-sm"
+                        >
+                          {dj.name}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -140,13 +142,18 @@ export function Layout() {
               <div className="relative hidden md:block">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  onMouseEnter={() => setUserMenuOpen(true)}
                   className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors cursor-pointer"
                 >
                   <User className="w-5 h-5" />
                   <ChevronDown className="w-4 h-4" />
                 </button>
                 {userMenuOpen && (
-                  <div className="absolute top-full right-0 mt-2 bg-white border border-border rounded-lg shadow-xl py-2 w-56 z-50">
+                  <div
+                    className="absolute top-full right-0 pt-2 z-50"
+                    onMouseLeave={() => setUserMenuOpen(false)}
+                  >
+                    <div className="bg-white border border-border rounded-lg shadow-xl py-2 w-56">
                     <Link
                       to="/playlists"
                       className="block px-4 py-2 hover:bg-secondary transition-colors"
@@ -196,6 +203,7 @@ export function Layout() {
                     >
                       Account aanmaken
                     </Link>
+                    </div>
                   </div>
                 )}
               </div>
