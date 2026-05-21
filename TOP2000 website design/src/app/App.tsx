@@ -31,19 +31,14 @@ export default function App() {
 
     const checkBackendConnection = async () => {
       try {
-        const response = await fetch(BACKEND_URL, {
+        await fetch(BACKEND_URL, {
           method: 'GET',
+          mode: 'no-cors',
+          cache: 'no-store',
           signal: controller.signal,
         });
 
-        if (!response.ok) {
-          const message = `Backend call failed with status ${response.status} ${response.statusText}`.trim();
-          console.error(message);
-          window.alert(message);
-          return;
-        }
-
-        const message = `Backend call succeeded: ${BACKEND_URL}`;
+        const message = `Backend call reached ${BACKEND_URL}. Response details are hidden by the browser for cross-origin no-cors requests.`;
         console.info(message);
         window.alert(message);
       } catch (error) {
