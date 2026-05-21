@@ -26,38 +26,16 @@ import { TermsPage } from './pages/TermsPage';
 const BACKEND_URL = 'https://top2000teamadml.runasp.net';
 const ALLOWED_FRONTEND_ORIGIN = 'https://eindproject-frontend-teamadml.vercel.app';
 const TOP2000_YEAR = 2024;
-
-type ApiRecord = Record<string, unknown>;
-
-function getNumericField(record: ApiRecord | undefined, fieldNames: string[]) {
-  if (!record) {
-    return undefined;
-  }
-
-  for (const fieldName of fieldNames) {
-    const value = record[fieldName];
-    if (typeof value === 'number') {
-      return value;
-    }
-  }
-
-  return undefined;
-}
-
-function getStringField(record: ApiRecord | undefined, fieldNames: string[]) {
-  if (!record) {
-    return undefined;
-  }
-
-  for (const fieldName of fieldNames) {
-    const value = record[fieldName];
-    if (typeof value === 'string' && value.trim().length > 0) {
-      return value;
-    }
-  }
-
-  return undefined;
-}
+const BACKEND_ENDPOINTS = [
+  { label: 'GET /api/artists', url: `${BACKEND_URL}/api/artists` },
+  { label: 'GET /api/artists/1', url: `${BACKEND_URL}/api/artists/1` },
+  { label: 'GET /api/artists/search?name=queen', url: `${BACKEND_URL}/api/artists/search?name=queen` },
+  { label: 'GET /api/songs', url: `${BACKEND_URL}/api/songs` },
+  { label: 'GET /api/songs/1', url: `${BACKEND_URL}/api/songs/1` },
+  { label: 'GET /api/songs/by-artist/1', url: `${BACKEND_URL}/api/songs/by-artist/1` },
+  { label: `GET /api/top2000/${TOP2000_YEAR}`, url: `${BACKEND_URL}/api/top2000/${TOP2000_YEAR}` },
+  { label: `GET /api/top2000/${TOP2000_YEAR}/1`, url: `${BACKEND_URL}/api/top2000/${TOP2000_YEAR}/1` },
+];
 
 export default function App() {
   useEffect(() => {
@@ -134,74 +112,11 @@ export default function App() {
       };
 
       try {
-        const artistsResult = await fetchEndpoint('GET /api/artists', `${BACKEND_URL}/api/artists`);
-        const artists = Array.isArray(artistsResult.data) ? (artistsResult.data as ApiRecord[]) : [];
-        const firstArtist = artists[0];
-        const artistId = getNumericField(firstArtist, ['id', 'artistId']);
-        const artistName = getStringField(firstArtist, ['name', 'artistName']);
-
-        const songsResult = await fetchEndpoint('GET /api/songs', `${BACKEND_URL}/api/songs`);
-        const songs = Array.isArray(songsResult.data) ? (songsResult.data as ApiRecord[]) : [];
-        const firstSong = songs[0];
-        const songId = getNumericField(firstSong, ['id', 'songId']);
-        const songArtistId = getNumericField(firstSong, ['artistId']);
-
-        const checks = [artistsResult.message, songsResult.message];
-
-        if (artistId !== undefined) {
-          const artistByIdResult = await fetchEndpoint(
-            `GET /api/artists/${artistId}`,
-            `${BACKEND_URL}/api/artists/${artistId}`
-          );
-          checks.push(artistByIdResult.message);
-        } else {
-          checks.push('GET /api/artists/{id} skipped because no artist id was returned from /api/artists');
-        }
-
-        if (artistName) {
-          const artistSearchResult = await fetchEndpoint(
-            `GET /api/artists/search?name=${encodeURIComponent(artistName)}`,
-            `${BACKEND_URL}/api/artists/search?name=${encodeURIComponent(artistName)}`
-          );
-          checks.push(artistSearchResult.message);
-        } else {
-          checks.push('GET /api/artists/search?name=... skipped because no artist name was returned from /api/artists');
-        }
-
-        if (songId !== undefined) {
-          const songByIdResult = await fetchEndpoint(
-            `GET /api/songs/${songId}`,
-            `${BACKEND_URL}/api/songs/${songId}`
-          );
-          checks.push(songByIdResult.message);
-        } else {
-          checks.push('GET /api/songs/{id} skipped because no song id was returned from /api/songs');
-        }
-
-        const byArtistId = songArtistId ?? artistId;
-        if (byArtistId !== undefined) {
-          const songsByArtistResult = await fetchEndpoint(
-            `GET /api/songs/by-artist/${byArtistId}`,
-            `${BACKEND_URL}/api/songs/by-artist/${byArtistId}`
-          );
-          checks.push(songsByArtistResult.message);
-        } else {
-          checks.push('GET /api/songs/by-artist/{artistId} skipped because no artist id was returned from the artists or songs data');
-        }
-
-        const top2000YearResult = await fetchEndpoint(
-          `GET /api/top2000/${TOP2000_YEAR}`,
-          `${BACKEND_URL}/api/top2000/${TOP2000_YEAR}`
+        const results = await Promise.all(
+          BACKEND_ENDPOINTS.map(({ label, url }) => fetchEndpoint(label, url))
         );
-        checks.push(top2000YearResult.message);
 
-        const top2000PositionResult = await fetchEndpoint(
-          `GET /api/top2000/${TOP2000_YEAR}/1`,
-          `${BACKEND_URL}/api/top2000/${TOP2000_YEAR}/1`
-        );
-        checks.push(top2000PositionResult.message);
-
-        const message = checks.join('\n');
+        const message = results.map(result => result.message).join('\n');
         window.alert(message);
       } catch (error) {
         const originHint = currentOrigin !== ALLOWED_FRONTEND_ORIGIN
