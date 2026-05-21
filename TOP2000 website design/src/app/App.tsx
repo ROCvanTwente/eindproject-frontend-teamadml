@@ -24,28 +24,48 @@ import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 
 const BACKEND_URL = 'https://top2000teamadml.runasp.net';
+const ALLOWED_FRONTEND_ORIGIN = 'https://eindproject-frontend-teamadml.vercel.app';
 
 export default function App() {
   useEffect(() => {
     const controller = new AbortController();
 
     const checkBackendConnection = async () => {
+      const currentOrigin = window.location.origin;
+
       try {
-        await fetch(BACKEND_URL, {
+        const response = await fetch(BACKEND_URL, {
           method: 'GET',
-          mode: 'no-cors',
           cache: 'no-store',
           signal: controller.signal,
         });
 
-        const message = `Backend call reached ${BACKEND_URL}. Response details are hidden by the browser for cross-origin no-cors requests.`;
+        if (!response.ok) {
+          const message = `Backend reached ${BACKEND_URL}, but it returned ${response.status} ${response.statusText}.`;
+          console.error(message, {
+            backendUrl: BACKEND_URL,
+            frontendOrigin: currentOrigin,
+            status: response.status,
+            statusText: response.statusText,
+          });
+          window.alert(message);
+          return;
+        }
+
+        const message = `Backend call succeeded from ${currentOrigin} to ${BACKEND_URL}.`;
         console.info(message);
         window.alert(message);
       } catch (error) {
-        const message = error instanceof Error
-          ? `Backend call failed: ${error.message}`
-          : 'Backend call failed due to an unknown error.';
-        console.error(message, error);
+        const originHint = currentOrigin !== ALLOWED_FRONTEND_ORIGIN
+          ? `Likely CORS issue: backend currently allows ${ALLOWED_FRONTEND_ORIGIN}, but this app is running from ${currentOrigin}.`
+          : 'The frontend origin matches the configured CORS origin, so the backend may be unreachable or rejecting the request.';
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const message = `Backend call failed: ${errorMessage}. ${originHint}`;
+        console.error(message, error, {
+          backendUrl: BACKEND_URL,
+          frontendOrigin: currentOrigin,
+          allowedFrontendOrigin: ALLOWED_FRONTEND_ORIGIN,
+        });
         window.alert(message);
       }
     };
