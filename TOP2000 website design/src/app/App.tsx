@@ -67,19 +67,60 @@ export default function App() {
       const currentOrigin = window.location.origin;
 
       const fetchEndpoint = async (label: string, url: string) => {
-        const response = await fetch(url, {
-          method: 'GET',
-          cache: 'no-store',
-          signal: controller.signal,
-        });
+        try {
+          const response = await fetch(url, {
+            method: 'GET',
+            cache: 'no-store',
+            signal: controller.signal,
+          });
 
-        if (!response.ok) {
-          const message = `${label} failed with ${response.status} ${response.statusText}`.trim();
-          console.error(message, {
+          if (!response.ok) {
+            const message = `${label} failed with ${response.status} ${response.statusText}`.trim();
+            console.error(message, {
+              endpoint: label,
+              url,
+              status: response.status,
+              statusText: response.statusText,
+              frontendOrigin: currentOrigin,
+            });
+            return {
+              ok: false,
+              label,
+              url,
+              message,
+              data: undefined as unknown,
+            };
+          }
+
+          const data = await response.json();
+          const sample = Array.isArray(data) ? data[0] : data;
+
+          console.info(`${label} succeeded`, {
+            url,
+            sample,
+          });
+
+          if (sample !== undefined) {
+            console.log(`${label} sample data:`, sample);
+          }
+
+          const countText = Array.isArray(data)
+            ? `returned ${data.length} item(s)`
+            : 'returned an object';
+
+          return {
+            ok: true,
+            label,
+            url,
+            message: `${label} succeeded and ${countText}`,
+            data,
+          };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          const message = `${label} failed: ${errorMessage}`;
+          console.error(message, error, {
             endpoint: label,
             url,
-            status: response.status,
-            statusText: response.statusText,
             frontendOrigin: currentOrigin,
           });
           return {
@@ -90,30 +131,6 @@ export default function App() {
             data: undefined as unknown,
           };
         }
-
-        const data = await response.json();
-        const sample = Array.isArray(data) ? data[0] : data;
-
-        console.info(`${label} succeeded`, {
-          url,
-          sample,
-        });
-
-        if (sample !== undefined) {
-          console.log(`${label} sample data:`, sample);
-        }
-
-        const countText = Array.isArray(data)
-          ? `returned ${data.length} item(s)`
-          : 'returned an object';
-
-        return {
-          ok: true,
-          label,
-          url,
-          message: `${label} succeeded and ${countText}`,
-          data,
-        };
       };
 
       try {
