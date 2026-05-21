@@ -28,13 +28,9 @@ const ALLOWED_FRONTEND_ORIGIN = 'https://eindproject-frontend-teamadml.vercel.ap
 const TOP2000_YEAR = 2024;
 const BACKEND_ENDPOINTS = [
   { label: 'GET /api/artists', url: `${BACKEND_URL}/api/artists` },
-  { label: 'GET /api/artists/1', url: `${BACKEND_URL}/api/artists/1` },
   { label: 'GET /api/artists/search?name=queen', url: `${BACKEND_URL}/api/artists/search?name=queen` },
   { label: 'GET /api/songs', url: `${BACKEND_URL}/api/songs` },
-  { label: 'GET /api/songs/1', url: `${BACKEND_URL}/api/songs/1` },
-  { label: 'GET /api/songs/by-artist/1', url: `${BACKEND_URL}/api/songs/by-artist/1` },
   { label: `GET /api/top2000/${TOP2000_YEAR}`, url: `${BACKEND_URL}/api/top2000/${TOP2000_YEAR}` },
-  { label: `GET /api/top2000/${TOP2000_YEAR}/1`, url: `${BACKEND_URL}/api/top2000/${TOP2000_YEAR}/1` },
 ];
 
 export default function App() {
