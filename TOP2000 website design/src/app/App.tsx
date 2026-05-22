@@ -15,8 +15,7 @@ import { SongDetailPage } from './pages/SongDetailPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { StatisticsPage } from './pages/StatisticsPage';
-import { AdminArtistsPage } from './pages/AdminArtistsPage';
-import { AdminSongsPage } from './pages/AdminSongsPage';
+import { AdminPanel } from './pages/AdminPanel';
 import { PlaylistsPage } from './pages/PlaylistsPage';
 import { CreatePlaylistPage } from './pages/CreatePlaylistPage';
 import { PlaylistDetailPage } from './pages/PlaylistDetailPage';
@@ -117,8 +116,9 @@ export default function App() {
           <Route path="playlists" element={<PlaylistsPage />} />
           <Route path="playlists/new" element={<CreatePlaylistPage />} />
           <Route path="playlist/:id" element={<PlaylistDetailPage />} />
-          <Route path="admin/artiesten" element={<AdminArtistsPage />} />
-          <Route path="admin/nummers" element={<AdminSongsPage />} />
+          <Route path="admin" element={<AdminPanel />} />
+          <Route path="admin/artiesten" element={<AdminPanel />} />
+          <Route path="admin/nummers" element={<AdminPanel />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
         </Route>

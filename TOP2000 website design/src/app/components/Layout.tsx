@@ -166,23 +166,13 @@ export function Layout() {
                     </Link>
                     <div className="border-t border-border my-1"></div>
                     <Link
-                      to="/admin/artiesten"
+                      to="/admin"
                       className="block px-4 py-2 hover:bg-secondary transition-colors"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       <div className="flex items-center gap-2">
                         <Shield className="w-4 h-4" />
-                        Admin: Artiesten
-                      </div>
-                    </Link>
-                    <Link
-                      to="/admin/nummers"
-                      className="block px-4 py-2 hover:bg-secondary transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4" />
-                        Admin: Nummers
+                        Admin Panel
                       </div>
                     </Link>
                     <div className="border-t border-border my-1"></div>
@@ -326,18 +316,11 @@ export function Layout() {
               <div className="py-2 mt-2 pt-4 border-t border-border">
                 <div className="font-semibold mb-2">Admin</div>
                 <Link
-                  to="/admin/artiesten"
+                  to="/admin"
                   className="block py-1 pl-4 text-sm hover:text-primary transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Artiesten Beheer
-                </Link>
-                <Link
-                  to="/admin/nummers"
-                  className="block py-1 pl-4 text-sm hover:text-primary transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Nummers Beheer
+                  Admin Panel
                 </Link>
               </div>
               <Link
