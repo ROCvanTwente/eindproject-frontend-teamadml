@@ -36,22 +36,22 @@ const schedule = [
 const djProfiles = [
   {
     name: 'Rob Stenders',
-    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1504593811423-6dd665756598?w=400&h=400&fit=crop',
     bio: 'Radio veteraan en muziekkenner'
   },
   {
     name: 'Ruud de Wild',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=400&h=400&fit=crop',
     bio: 'Energieke presentator met passie voor muziek'
   },
   {
     name: 'Jan-Willem Roodbeen',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop',
     bio: 'Specialist in klassiekers en verhalen'
   },
   {
     name: 'Bart Arens',
-    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=400&h=400&fit=crop',
     bio: 'Nachtelijke stem van de Top 2000'
   }
 ];

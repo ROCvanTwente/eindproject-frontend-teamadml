@@ -8,7 +8,7 @@ const top5Songs2024 = [
     artist: 'Queen',
     year: 1975,
     previousPosition: 1,
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop'
+    imageUrl: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=400&h=400&fit=crop'
   },
   {
     position: 2,
@@ -16,7 +16,7 @@ const top5Songs2024 = [
     artist: 'Eagles',
     year: 1977,
     previousPosition: 3,
-    imageUrl: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400&h=400&fit=crop'
+    imageUrl: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=400&h=400&fit=crop'
   },
   {
     position: 3,
@@ -24,7 +24,7 @@ const top5Songs2024 = [
     artist: 'Led Zeppelin',
     year: 1971,
     previousPosition: 2,
-    imageUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=400&fit=crop'
+    imageUrl: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=400&h=400&fit=crop'
   },
   {
     position: 4,
@@ -32,7 +32,7 @@ const top5Songs2024 = [
     artist: 'John Lennon',
     year: 1971,
     previousPosition: 5,
-    imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop'
+    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'
   },
   {
     position: 5,
@@ -40,7 +40,7 @@ const top5Songs2024 = [
     artist: 'Deep Purple',
     year: 1970,
     previousPosition: 4,
-    imageUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&h=400&fit=crop'
+    imageUrl: 'https://images.unsplash.com/photo-1461783436728-0a9217714694?w=400&h=400&fit=crop'
   }
 ];
 

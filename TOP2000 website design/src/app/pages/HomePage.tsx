@@ -8,21 +8,21 @@ const articleData = [
     id: 1,
     title: 'Het verhaal achter Bohemian Rhapsody',
     description: 'Ontdek waarom dit Queen-nummer al jaren de lijst aanvoert',
-    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600&h=400&fit=crop',
     date: '15 december 2024'
   },
   {
     id: 2,
     title: 'De ontwikkeling van de Top 2000 door de jaren heen',
     description: 'Van 1999 tot nu: hoe de lijst is veranderd',
-    image: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=600&h=400&fit=crop',
     date: '12 december 2024'
   },
   {
     id: 3,
     title: 'Nieuwkomers in de lijst van 2024',
     description: 'Deze nieuwe nummers maken hun debuut',
-    image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=600&h=400&fit=crop',
     date: '10 december 2024'
   }
 ];

@@ -5,17 +5,17 @@ import 'slick-carousel/slick/slick-theme.css';
 
 const carouselImages = [
   {
-    url: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1600&h=600&fit=crop',
+    url: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=1600&h=600&fit=crop',
     title: 'TOP 2000 Live',
     description: 'Beleef de magie van de TOP 2000'
   },
   {
-    url: 'https://images.unsplash.com/photo-1565035010268-a3816f98589a?w=1600&h=600&fit=crop',
+    url: 'https://images.unsplash.com/photo-1461783436728-0a9217714694?w=1600&h=600&fit=crop',
     title: 'De Beste Muziek',
     description: 'Van 25 december tot en met 31 december'
   },
   {
-    url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1600&h=600&fit=crop',
+    url: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1600&h=600&fit=crop',
     title: 'Stem Nu!',
     description: 'Bepaal mee welke nummers in de lijst komen'
   }

@@ -32,7 +32,7 @@ export const mockArtists: Artist[] = [
     id: 1,
     name: 'Queen',
     bio: 'Queen is een Britse rockband opgericht in 1970 in Londen. De groep bestaat uit gitarist Brian May, drummer Roger Taylor, zanger Freddie Mercury (overleden in 1991) en bassist John Deacon.',
-    photoUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=600&fit=crop',
+    photoUrl: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=600&h=600&fit=crop',
     website: 'https://www.queenonline.com',
     wikiUrl: 'https://nl.wikipedia.org/wiki/Queen',
     numberOfSongs: 15
@@ -41,7 +41,7 @@ export const mockArtists: Artist[] = [
     id: 2,
     name: 'Eagles',
     bio: 'Eagles is een Amerikaanse rockband uit Los Angeles, opgericht in 1971. De band is vooral bekend van hun countryrock en hits als Hotel California.',
-    photoUrl: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600&h=600&fit=crop',
+    photoUrl: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=600&h=600&fit=crop',
     website: 'https://eagles.com',
     wikiUrl: 'https://nl.wikipedia.org/wiki/Eagles',
     numberOfSongs: 12
@@ -50,7 +50,7 @@ export const mockArtists: Artist[] = [
     id: 3,
     name: 'Led Zeppelin',
     bio: 'Led Zeppelin was een Engelse rockband, opgericht in Londen in 1968. De groep wordt beschouwd als een van de meest invloedrijke rockbands aller tijden.',
-    photoUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=600&fit=crop',
+    photoUrl: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=600&h=600&fit=crop',
     wikiUrl: 'https://nl.wikipedia.org/wiki/Led_Zeppelin',
     numberOfSongs: 18
   },
@@ -58,7 +58,7 @@ export const mockArtists: Artist[] = [
     id: 4,
     name: 'John Lennon',
     bio: 'John Lennon was een Engels muzikant, zanger, songwriter en vredesactivist. Hij verwierf wereldwijde bekendheid als oprichter en leadzanger van The Beatles.',
-    photoUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=600&fit=crop',
+    photoUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&h=600&fit=crop',
     wikiUrl: 'https://nl.wikipedia.org/wiki/John_Lennon',
     numberOfSongs: 8
   },
@@ -66,7 +66,7 @@ export const mockArtists: Artist[] = [
     id: 5,
     name: 'Deep Purple',
     bio: 'Deep Purple is een Engelse rockband opgericht in 1968. De band geldt als een van de grondleggers van heavy metal en moderne hardrock.',
-    photoUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=600&h=600&fit=crop',
+    photoUrl: 'https://images.unsplash.com/photo-1461783436728-0a9217714694?w=600&h=600&fit=crop',
     wikiUrl: 'https://nl.wikipedia.org/wiki/Deep_Purple',
     numberOfSongs: 10
   },
@@ -74,7 +74,7 @@ export const mockArtists: Artist[] = [
     id: 6,
     name: 'The Beatles',
     bio: 'The Beatles was een Engelse popgroep uit Liverpool, opgericht in 1960. De band wordt algemeen beschouwd als de invloedrijkste en populairste band aller tijden.',
-    photoUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=600&fit=crop',
+    photoUrl: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600&h=600&fit=crop',
     wikiUrl: 'https://nl.wikipedia.org/wiki/The_Beatles',
     numberOfSongs: 45
   },
@@ -82,7 +82,7 @@ export const mockArtists: Artist[] = [
     id: 7,
     name: 'Pink Floyd',
     bio: 'Pink Floyd is een Britse progressieve rockband opgericht in 1965 in Londen. De groep staat vooral bekend om hun filosofische songteksten en experimentele muziek.',
-    photoUrl: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600&h=600&fit=crop',
+    photoUrl: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=600&h=600&fit=crop',
     wikiUrl: 'https://nl.wikipedia.org/wiki/Pink_Floyd',
     numberOfSongs: 22
   },
@@ -90,7 +90,7 @@ export const mockArtists: Artist[] = [
     id: 8,
     name: 'Bruce Springsteen',
     bio: 'Bruce Springsteen is een Amerikaans singer-songwriter en muzikant. Hij staat ook bekend als "The Boss" en is beroemd om zijn energieke optredens.',
-    photoUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=600&fit=crop',
+    photoUrl: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=600&h=600&fit=crop',
     wikiUrl: 'https://nl.wikipedia.org/wiki/Bruce_Springsteen',
     numberOfSongs: 14
   }
@@ -103,7 +103,7 @@ export const mockSongs: Song[] = [
     artistId: 1,
     artistName: 'Queen',
     year: 1975,
-    albumCover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop',
+    albumCover: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=400&h=400&fit=crop',
     youtubeUrl: 'https://www.youtube.com/watch?v=fJ9rUzIMcZQ',
     lyricsPreview: 'Is this the real life? Is this just fantasy...',
     timesListed: 26
@@ -114,7 +114,7 @@ export const mockSongs: Song[] = [
     artistId: 2,
     artistName: 'Eagles',
     year: 1977,
-    albumCover: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400&h=400&fit=crop',
+    albumCover: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=400&h=400&fit=crop',
     youtubeUrl: 'https://www.youtube.com/watch?v=EqPtz5qN7HM',
     lyricsPreview: 'On a dark desert highway, cool wind in my hair...',
     timesListed: 26
@@ -125,7 +125,7 @@ export const mockSongs: Song[] = [
     artistId: 3,
     artistName: 'Led Zeppelin',
     year: 1971,
-    albumCover: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=400&fit=crop',
+    albumCover: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=400&h=400&fit=crop',
     youtubeUrl: 'https://www.youtube.com/watch?v=iXQUu5Dti4g',
     lyricsPreview: "There's a lady who's sure all that glitters is gold...",
     timesListed: 26
@@ -136,7 +136,7 @@ export const mockSongs: Song[] = [
     artistId: 4,
     artistName: 'John Lennon',
     year: 1971,
-    albumCover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop',
+    albumCover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop',
     youtubeUrl: 'https://www.youtube.com/watch?v=YkgkThdzX-8',
     lyricsPreview: "Imagine there's no heaven, it's easy if you try...",
     timesListed: 26
@@ -147,7 +147,7 @@ export const mockSongs: Song[] = [
     artistId: 5,
     artistName: 'Deep Purple',
     year: 1970,
-    albumCover: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&h=400&fit=crop',
+    albumCover: 'https://images.unsplash.com/photo-1461783436728-0a9217714694?w=400&h=400&fit=crop',
     youtubeUrl: 'https://www.youtube.com/watch?v=PfAWReBmxEs',
     lyricsPreview: 'Sweet child in time, you\'ll see the line...',
     timesListed: 25

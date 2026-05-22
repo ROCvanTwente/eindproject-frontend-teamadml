@@ -6,7 +6,7 @@ const newsArticles = [
     title: 'Stemmen voor Top 2000 van 2025 geopend',
     excerpt: 'Vanaf vandaag kun je stemmen op jouw favoriete nummers voor de Top 2000 van 2025.',
     date: '1 november 2024',
-    image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&h=500&fit=crop',
+    image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&h=500&fit=crop',
     category: 'Algemeen'
   },
   {
@@ -14,7 +14,7 @@ const newsArticles = [
     title: 'Nieuwe records gebroken in de lijst van 2024',
     excerpt: 'De Top 2000 van 2024 heeft meerdere records gebroken, waaronder het aantal stemmen.',
     date: '28 december 2024',
-    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=500&fit=crop',
+    image: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=800&h=500&fit=crop',
     category: 'Statistieken'
   },
   {
@@ -22,7 +22,7 @@ const newsArticles = [
     title: 'Interview met de DJ\'s van de Top 2000',
     excerpt: 'We spraken met de presentatoren over hun favoriete nummers en herinneringen.',
     date: '20 december 2024',
-    image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=500&fit=crop',
+    image: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800&h=500&fit=crop',
     category: 'Interviews'
   },
   {
@@ -30,7 +30,7 @@ const newsArticles = [
     title: 'De grootste klimbers van dit jaar',
     excerpt: 'Deze nummers maakten de grootste sprong in de lijst van 2024.',
     date: '26 december 2024',
-    image: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800&h=500&fit=crop',
+    image: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=800&h=500&fit=crop',
     category: 'Statistieken'
   },
   {
@@ -38,7 +38,7 @@ const newsArticles = [
     title: 'Behind the scenes van de Top 2000 studio',
     excerpt: 'Een kijkje achter de schermen bij de uitzending van de Top 2000.',
     date: '25 december 2024',
-    image: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&h=500&fit=crop',
+    image: 'https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?w=800&h=500&fit=crop',
     category: 'Behind the scenes'
   },
   {
@@ -46,7 +46,7 @@ const newsArticles = [
     title: 'De meest gedraaide artiesten in de geschiedenis',
     excerpt: 'Deze artiesten hebben de meeste nummers in de Top 2000 door de jaren heen.',
     date: '15 december 2024',
-    image: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&h=500&fit=crop',
+    image: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800&h=500&fit=crop',
     category: 'Statistieken'
   }
 ];
