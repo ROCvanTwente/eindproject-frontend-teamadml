@@ -24,7 +24,6 @@ import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 
 const BACKEND_URL = 'https://top2000teamadml.runasp.net';
-const ALLOWED_FRONTEND_ORIGIN = 'https://eindproject-frontend-teamadml.vercel.app';
 const BACKEND_ENDPOINTS = [
   { label: 'GET /api/artists', url: `${BACKEND_URL}/api/artists` },
   { label: 'GET /api/songs', url: `${BACKEND_URL}/api/songs` },
@@ -36,8 +35,6 @@ export default function App() {
     const controller = new AbortController();
 
     const checkBackendConnection = async () => {
-      const currentOrigin = window.location.origin;
-
       const fetchEndpoint = async (label: string, url: string) => {
         try {
           const response = await fetch(url, {
@@ -47,14 +44,8 @@ export default function App() {
           });
 
           if (!response.ok) {
-            const message = `${label} failed with ${response.status} ${response.statusText}`.trim();
-            console.error(message, {
-              endpoint: label,
-              url,
-              status: response.status,
-              statusText: response.statusText,
-              frontendOrigin: currentOrigin,
-            });
+            const message = `${label}: ${response.status}`;
+            console.error(message);
             return {
               ok: false,
               label,
@@ -64,37 +55,18 @@ export default function App() {
             };
           }
 
-          const data = await response.json();
-          const sample = Array.isArray(data) ? data[0] : data;
-
-          console.info(`${label} succeeded`, {
-            url,
-            sample,
-          });
-
-          if (sample !== undefined) {
-            console.log(`${label} sample data:`, sample);
-          }
-
-          const countText = Array.isArray(data)
-            ? `returned ${data.length} item(s)`
-            : 'returned an object';
+          console.info(`${label}: ok`);
 
           return {
             ok: true,
             label,
             url,
-            message: `${label} succeeded and ${countText}`,
-            data,
+            message: `${label}: ok`,
+            data: undefined as unknown,
           };
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          const message = `${label} failed: ${errorMessage}`;
-          console.error(message, error, {
-            endpoint: label,
-            url,
-            frontendOrigin: currentOrigin,
-          });
+          const message = `${label}: failed`;
+          console.error(message);
           return {
             ok: false,
             label,
@@ -105,30 +77,11 @@ export default function App() {
         }
       };
 
-      try {
-        const results = await Promise.all(
-          BACKEND_ENDPOINTS.map(({ label, url }) => fetchEndpoint(label, url))
-        );
+      const results = await Promise.all(
+        BACKEND_ENDPOINTS.map(({ label, url }) => fetchEndpoint(label, url))
+      );
 
-        console.info('Backend endpoint check finished', {
-          results: results.map(result => ({
-            endpoint: result.label,
-            url: result.url,
-            message: result.message,
-          })),
-        });
-      } catch (error) {
-        const originHint = currentOrigin !== ALLOWED_FRONTEND_ORIGIN
-          ? `Likely CORS issue: backend currently allows ${ALLOWED_FRONTEND_ORIGIN}, but this app is running from ${currentOrigin}.`
-          : 'The frontend origin matches the configured CORS origin, so the backend may be unreachable or rejecting the request.';
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        const message = `Backend check failed: ${errorMessage}. ${originHint}`;
-        console.error(message, error, {
-          backendUrl: BACKEND_URL,
-          frontendOrigin: currentOrigin,
-          allowedFrontendOrigin: ALLOWED_FRONTEND_ORIGIN,
-        });
-      }
+      console.info('Backend check done', results.map(result => result.message));
     };
 
     void checkBackendConnection();
