@@ -17,15 +17,17 @@ export function AdminPanel() {
 		setErrorMessage('');
 
 		try {
-			const [artistsResponse, songsResponse] = await Promise.all([
+			const [artistsResponse, songsResponse, top2000Response] = await Promise.all([
 				fetch(`${BACKEND_URL}/api/artists`, { cache: 'no-store' }),
 				fetch(`${BACKEND_URL}/api/songs`, { cache: 'no-store' }),
+                fetch(`${BACKEND_URL}/api/top2000`, { cache: 'no-store' })
 			]);
 
-			if (!artistsResponse.ok || !songsResponse.ok) {
+			if (!artistsResponse.ok || !songsResponse.ok || !top2000Response.ok) {
 				const failedEndpoints = [
 					!artistsResponse.ok ? `/api/artists (${artistsResponse.status})` : null,
 					!songsResponse.ok ? `/api/songs (${songsResponse.status})` : null,
+					!top2000Response.ok ? `/api/top2000 (${top2000Response.status})` : null,
 				].filter(Boolean).join(', ');
 
 				throw new Error(`Backend request failed for ${failedEndpoints}`);
