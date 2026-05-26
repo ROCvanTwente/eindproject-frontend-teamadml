@@ -3,43 +3,208 @@ import { AlertCircle, Loader2, Music2, RefreshCw, Users } from 'lucide-react';
 import type { Artist, Song } from '../data/mockData';
 
 const BACKEND_URL = 'https://top2000teamadml.runasp.net';
+const ITEMS_PER_PAGE = 10;
 
 type FetchState = 'idle' | 'loading' | 'success' | 'error';
+type BackendArtist = Omit<Artist, 'id'> & {
+	artistId: number;
+};
+type BackendSong = Omit<Song, 'id'> & {
+	songId: number;
+	releaseYear: number;
+	artistId: number;
+	youtube?: string;
+};
+type SortDirection = 'asc' | 'desc';
+type ArtistSortKey = 'artistId' | 'name' | 'songCount';
+type SongSortKey = 'songId' | 'title' | 'artistName' | 'releaseYear';
+
+
+function paginateItems<T>(items: T[], currentPage: number) {
+	const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+	return items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+}
+
+function getVisiblePageNumbers(currentPage: number, totalPages: number) {
+	if (totalPages <= 7) {
+		return Array.from({ length: totalPages }, (_, index) => index + 1);
+	}
+
+	if (currentPage <= 4) {
+		return [1, 2, 3, 4, 5, 'ellipsis', totalPages] as const;
+	}
+
+	if (currentPage >= totalPages - 3) {
+		return [1, 'ellipsis', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages] as const;
+	}
+
+	return [1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages] as const;
+}
+
+function compareValues(leftValue: string | number, rightValue: string | number, direction: SortDirection) {
+	const comparison = typeof leftValue === 'number' && typeof rightValue === 'number'
+		? leftValue - rightValue
+		: String(leftValue).localeCompare(String(rightValue), 'nl', { sensitivity: 'base' });
+
+	return direction === 'asc' ? comparison : -comparison;
+}
+
+type PaginationProps = {
+	currentPage: number;
+	totalPages: number;
+	onPageChange: (page: number) => void;
+};
+
+function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+	const visiblePages = getVisiblePageNumbers(currentPage, totalPages);
+	const [pageInput, setPageInput] = useState(String(currentPage));
+
+	useEffect(() => {
+		setPageInput(String(currentPage));
+	}, [currentPage]);
+
+	const submitPage = () => {
+		const parsedPage = Number.parseInt(pageInput, 10);
+		if (Number.isNaN(parsedPage)) {
+			setPageInput(String(currentPage));
+			return;
+		}
+
+		onPageChange(Math.min(Math.max(parsedPage, 1), totalPages));
+	};
+
+	return (
+		<div className="flex items-center gap-2 flex-wrap justify-end">
+			<button
+				onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+				disabled={currentPage === 1}
+				className="px-3 py-2 rounded-lg border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary transition-colors"
+			>
+				&lt;
+			</button>
+
+			{visiblePages.map((page, index) => page === 'ellipsis' ? (
+				<span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
+					...
+				</span>
+			) : (
+				<button
+					key={page}
+					onClick={() => onPageChange(page)}
+					className={`px-3 py-2 rounded-lg border transition-colors ${
+						page === currentPage
+							? 'bg-primary text-primary-foreground border-primary'
+							: 'border-border hover:bg-secondary'
+					}`}
+				>
+					{page}
+				</button>
+			))}
+
+			<button
+				onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+				disabled={currentPage === totalPages}
+				className="px-3 py-2 rounded-lg border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary transition-colors"
+			>
+				&gt;
+			</button>
+
+			<div className="flex items-center gap-2 ml-2">
+				<input
+					type="number"
+					min={1}
+					max={totalPages}
+					value={pageInput}
+					onChange={(event) => setPageInput(event.target.value)}
+					onKeyDown={(event) => {
+						if (event.key === 'Enter') {
+							submitPage();
+						}
+					}}
+					className="w-20 px-3 py-2 rounded-lg border border-border bg-background"
+					aria-label="Ga naar pagina"
+				/>
+				<button
+					onClick={submitPage}
+					className="px-3 py-2 rounded-lg border border-border hover:bg-secondary transition-colors"
+				>
+					Ga
+				</button>
+			</div>
+		</div>
+	);
+}
+
+type SortHeaderProps = {
+	label: string;
+	isActive: boolean;
+	direction: SortDirection;
+	onClick: () => void;
+};
+
+function SortHeader({ label, isActive, direction, onClick }: SortHeaderProps) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className="inline-flex items-center gap-2 hover:text-primary transition-colors"
+		>
+			<span>{label}</span>
+			<span className="text-xs text-muted-foreground">{isActive ? (direction === 'asc' ? '▲' : '▼') : '↕'}</span>
+		</button>
+	);
+}
 
 export function AdminPanel() {
-	const [artists, setArtists] = useState<Artist[]>([]);
-	const [songs, setSongs] = useState<Song[]>([]);
+	const [artists, setArtists] = useState<BackendArtist[]>([]);
+	const [songs, setSongs] = useState<BackendSong[]>([]);
 	const [fetchState, setFetchState] = useState<FetchState>('idle');
 	const [errorMessage, setErrorMessage] = useState('');
+	const [artistPage, setArtistPage] = useState(1);
+	const [songPage, setSongPage] = useState(1);
+	const [artistIdFilter, setArtistIdFilter] = useState('');
+	const [songIdFilter, setSongIdFilter] = useState('');
+	const [artistSort, setArtistSort] = useState<{ key: ArtistSortKey; direction: SortDirection }>({
+		key: 'artistId',
+		direction: 'asc',
+	});
+	const [songSort, setSongSort] = useState<{ key: SongSortKey; direction: SortDirection }>({
+		key: 'songId',
+		direction: 'asc',
+	});
 
 	const loadAdminData = async () => {
 		setFetchState('loading');
 		setErrorMessage('');
 
 		try {
-			const [artistsResponse, songsResponse, top2000Response] = await Promise.all([
+			const [artistsResponse, songsResponse] = await Promise.all([
 				fetch(`${BACKEND_URL}/api/artists`, { cache: 'no-store' }),
 				fetch(`${BACKEND_URL}/api/songs`, { cache: 'no-store' }),
-                fetch(`${BACKEND_URL}/api/top2000`, { cache: 'no-store' })
 			]);
 
-			if (!artistsResponse.ok || !songsResponse.ok || !top2000Response.ok) {
+			if (!artistsResponse.ok || !songsResponse.ok) {
 				const failedEndpoints = [
 					!artistsResponse.ok ? `/api/artists (${artistsResponse.status})` : null,
 					!songsResponse.ok ? `/api/songs (${songsResponse.status})` : null,
-					!top2000Response.ok ? `/api/top2000 (${top2000Response.status})` : null,
 				].filter(Boolean).join(', ');
 
 				throw new Error(`Backend request failed for ${failedEndpoints}`);
 			}
 
 			const [artistsData, songsData] = await Promise.all([
-				artistsResponse.json() as Promise<Artist[]>,
-				songsResponse.json() as Promise<Song[]>,
+				artistsResponse.json() as Promise<BackendArtist[]>,
+				songsResponse.json() as Promise<BackendSong[]>,
 			]);
 
 			setArtists(Array.isArray(artistsData) ? artistsData : []);
-			setSongs(Array.isArray(songsData) ? songsData : []);
+			setSongs(
+				Array.isArray(songsData)
+					? [...songsData].sort((leftSong, rightSong) => leftSong.songId - rightSong.songId)
+					: []
+			);
+			setArtistPage(1);
+			setSongPage(1);
 			setFetchState('success');
 		} catch (error) {
 			setFetchState('error');
@@ -50,6 +215,70 @@ export function AdminPanel() {
 	useEffect(() => {
 		void loadAdminData();
 	}, []);
+
+	const artistNamesById = new Map(artists.map(artist => [artist.artistId, artist.name]));
+	const songCountsByArtistId = songs.reduce((counts, song) => {
+		counts.set(song.artistId, (counts.get(song.artistId) ?? 0) + 1);
+		return counts;
+	}, new Map<number, number>());
+	const filteredArtists = artists.filter(artist => artistIdFilter.trim() === '' || String(artist.artistId).includes(artistIdFilter.trim()));
+	const filteredSongs = songs.filter(song => songIdFilter.trim() === '' || String(song.songId).includes(songIdFilter.trim()));
+	const sortedArtists = [...filteredArtists].sort((leftArtist, rightArtist) => {
+		if (artistSort.key === 'name') {
+			return compareValues(leftArtist.name, rightArtist.name, artistSort.direction);
+		}
+
+		if (artistSort.key === 'songCount') {
+			return compareValues(
+				songCountsByArtistId.get(leftArtist.artistId) ?? 0,
+				songCountsByArtistId.get(rightArtist.artistId) ?? 0,
+				artistSort.direction,
+			);
+		}
+
+		return compareValues(leftArtist.artistId, rightArtist.artistId, artistSort.direction);
+	});
+	const sortedSongs = [...filteredSongs].sort((leftSong, rightSong) => {
+		if (songSort.key === 'title') {
+			return compareValues(leftSong.title, rightSong.title, songSort.direction);
+		}
+
+		if (songSort.key === 'artistName') {
+			return compareValues(
+				artistNamesById.get(leftSong.artistId) ?? leftSong.artistId,
+				artistNamesById.get(rightSong.artistId) ?? rightSong.artistId,
+				songSort.direction,
+			);
+		}
+
+		if (songSort.key === 'releaseYear') {
+			return compareValues(leftSong.releaseYear, rightSong.releaseYear, songSort.direction);
+		}
+
+		return compareValues(leftSong.songId, rightSong.songId, songSort.direction);
+	});
+	const artistTotalPages = Math.max(1, Math.ceil(sortedArtists.length / ITEMS_PER_PAGE));
+	const songTotalPages = Math.max(1, Math.ceil(sortedSongs.length / ITEMS_PER_PAGE));
+	const safeArtistPage = Math.min(artistPage, artistTotalPages);
+	const safeSongPage = Math.min(songPage, songTotalPages);
+	const paginatedArtists = paginateItems(sortedArtists, safeArtistPage);
+	const paginatedSongs = paginateItems(sortedSongs, safeSongPage);
+
+	const toggleArtistSort = (key: ArtistSortKey) => {
+		setArtistSort(currentSort => ({
+			key,
+			direction: currentSort.key === key && currentSort.direction === 'asc' ? 'desc' : 'asc',
+		}));
+		setArtistPage(1);
+	};
+
+	const toggleSongSort = (key: SongSortKey) => {
+		setSongSort(currentSort => ({
+			key,
+			direction: currentSort.key === key && currentSort.direction === 'asc' ? 'desc' : 'asc',
+		}));
+		setSongPage(1);
+	};
 
 	return (
 		<div className="pb-12">
@@ -134,15 +363,25 @@ export function AdminPanel() {
 							<h2 className="text-2xl font-bold">Artiesten</h2>
 							<p className="text-sm text-muted-foreground">Live data uit de backend</p>
 						</div>
+						<input
+							type="text"
+							value={artistIdFilter}
+							onChange={(event) => {
+								setArtistIdFilter(event.target.value);
+								setArtistPage(1);
+							}}
+							placeholder="Zoek op artiest ID"
+							className="w-full max-w-52 px-4 py-2 rounded-lg border border-border bg-background"
+						/>
 					</div>
 
 					<div className="overflow-x-auto">
 						<table className="w-full">
 							<thead className="bg-secondary">
 								<tr>
-									<th className="px-4 py-3 text-left">ID</th>
-									<th className="px-4 py-3 text-left">Naam</th>
-									<th className="px-4 py-3 text-left">Aantal nummers</th>
+									<th className="px-4 py-3 text-left"><SortHeader label="ID" isActive={artistSort.key === 'artistId'} direction={artistSort.direction} onClick={() => toggleArtistSort('artistId')} /></th>
+									<th className="px-4 py-3 text-left"><SortHeader label="Naam" isActive={artistSort.key === 'name'} direction={artistSort.direction} onClick={() => toggleArtistSort('name')} /></th>
+									<th className="px-4 py-3 text-left"><SortHeader label="Aantal nummers" isActive={artistSort.key === 'songCount'} direction={artistSort.direction} onClick={() => toggleArtistSort('songCount')} /></th>
 									<th className="px-4 py-3 text-left">Website</th>
 									<th className="px-4 py-3 text-left">Wikipedia</th>
 								</tr>
@@ -154,11 +393,11 @@ export function AdminPanel() {
 											Geen artiesten geladen.
 										</td>
 									</tr>
-								) : artists.map((artist, index) => (
-									<tr key={artist.id} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
-										<td className="px-4 py-3">{artist.id}</td>
+								) : paginatedArtists.map((artist, index) => (
+									<tr key={artist.artistId ?? `${artist.name}-${index}`} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
+										<td className="px-4 py-3">{artist.artistId}</td>
 										<td className="px-4 py-3 font-semibold">{artist.name}</td>
-										<td className="px-4 py-3">{artist.numberOfSongs ?? '-'}</td>
+										<td className="px-4 py-3">{songCountsByArtistId.get(artist.artistId) ?? 0}</td>
 										<td className="px-4 py-3">
 											{artist.website ? (
 												<a href={artist.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm">
@@ -169,18 +408,21 @@ export function AdminPanel() {
 											)}
 										</td>
 										<td className="px-4 py-3">
-											{artist.wikiUrl ? (
-												<a href={artist.wikiUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm">
-													Wiki
+												<a href={`https://nl.wikipedia.org/wiki/${artist.name}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm">
+													{artist.name}
 												</a>
-											) : (
-												<span className="text-muted-foreground text-sm">-</span>
-											)}
 										</td>
 									</tr>
 								))}
 							</tbody>
 						</table>
+					</div>
+
+					<div className="px-6 py-4 border-t border-border flex items-center justify-between gap-4">
+						<p className="text-sm text-muted-foreground">
+							Pagina {safeArtistPage} van {artistTotalPages}
+						</p>
+						<Pagination currentPage={safeArtistPage} totalPages={artistTotalPages} onPageChange={setArtistPage} />
 					</div>
 				</section>
 
@@ -190,16 +432,26 @@ export function AdminPanel() {
 							<h2 className="text-2xl font-bold">Nummers</h2>
 							<p className="text-sm text-muted-foreground">Live data uit de backend</p>
 						</div>
+						<input
+							type="text"
+							value={songIdFilter}
+							onChange={(event) => {
+								setSongIdFilter(event.target.value);
+								setSongPage(1);
+							}}
+							placeholder="Zoek op song ID"
+							className="w-full max-w-52 px-4 py-2 rounded-lg border border-border bg-background"
+						/>
 					</div>
 
 					<div className="overflow-x-auto">
 						<table className="w-full">
 							<thead className="bg-secondary">
 								<tr>
-									<th className="px-4 py-3 text-left">ID</th>
-									<th className="px-4 py-3 text-left">Titel</th>
-									<th className="px-4 py-3 text-left">Artiest</th>
-									<th className="px-4 py-3 text-left">Jaar</th>
+									<th className="px-4 py-3 text-left"><SortHeader label="ID" isActive={songSort.key === 'songId'} direction={songSort.direction} onClick={() => toggleSongSort('songId')} /></th>
+									<th className="px-4 py-3 text-left"><SortHeader label="Titel" isActive={songSort.key === 'title'} direction={songSort.direction} onClick={() => toggleSongSort('title')} /></th>
+									<th className="px-4 py-3 text-left"><SortHeader label="Artiest" isActive={songSort.key === 'artistName'} direction={songSort.direction} onClick={() => toggleSongSort('artistName')} /></th>
+									<th className="px-4 py-3 text-left"><SortHeader label="Jaar" isActive={songSort.key === 'releaseYear'} direction={songSort.direction} onClick={() => toggleSongSort('releaseYear')} /></th>
 									<th className="px-4 py-3 text-left">Keer in lijst</th>
 									<th className="px-4 py-3 text-left">YouTube</th>
 								</tr>
@@ -211,16 +463,16 @@ export function AdminPanel() {
 											Geen nummers geladen.
 										</td>
 									</tr>
-								) : songs.map((song, index) => (
-									<tr key={song.id} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
-										<td className="px-4 py-3">{song.id}</td>
+								) : paginatedSongs.map((song, index) => (
+									<tr key={song.songId ?? `${song.title}-${song.artistId}-${index}`} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
+										<td className="px-4 py-3">{song.songId}</td>
 										<td className="px-4 py-3 font-semibold">{song.title}</td>
-										<td className="px-4 py-3">{song.artistName}</td>
-										<td className="px-4 py-3">{song.year}</td>
-										<td className="px-4 py-3">{song.timesListed}</td>
+										<td className="px-4 py-3">{artistNamesById.get(song.artistId) ?? song.artistId}</td>
+										<td className="px-4 py-3">{song.releaseYear}</td>
+										<td className="px-4 py-3">0</td>
 										<td className="px-4 py-3">
-											{song.youtubeUrl ? (
-												<a href={song.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm">
+											{song.youtube ? (
+												<a href={song.youtube} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm">
 													Link
 												</a>
 											) : (
@@ -231,6 +483,13 @@ export function AdminPanel() {
 								))}
 							</tbody>
 						</table>
+					</div>
+
+					<div className="px-6 py-4 border-t border-border flex items-center justify-between gap-4">
+						<p className="text-sm text-muted-foreground">
+							Pagina {safeSongPage} van {songTotalPages}
+						</p>
+						<Pagination currentPage={safeSongPage} totalPages={songTotalPages} onPageChange={setSongPage} />
 					</div>
 				</section>
 			</div>
