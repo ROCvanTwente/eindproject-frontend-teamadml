@@ -8,6 +8,7 @@ import { HistoryPage } from './pages/HistoryPage';
 import { ProgramPage } from './pages/ProgramPage';
 import { FAQPage } from './pages/FAQPage';
 import { ContactPage } from './pages/ContactPage';
+import { VotingPage } from './pages/VotingPage';
 import { ArtistsPage } from './pages/ArtistsPage';
 import { ArtistDetailPage } from './pages/ArtistDetailPage';
 import { SongsPage } from './pages/SongsPage';
@@ -108,6 +109,7 @@ export default function App() {
           <Route path="nieuws" element={<NewsPage />} />
           <Route path="geschiedenis" element={<HistoryPage />} />
           <Route path="programma" element={<ProgramPage />} />
+          <Route path="stemmen" element={<VotingPage />} />
           <Route path="faq" element={<FAQPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="statistieken" element={<StatisticsPage />} />
