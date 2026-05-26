@@ -42,7 +42,7 @@ export function HistoryPage() {
   return (
     <div className="pb-12">
       {/* Page Header */}
-      <section className="bg-gradient-to-r from-secondary via-white to-secondary py-12 border-b border-border">
+      <section className="py-12">
         <div className="container mx-auto px-4">
           <h1 className="text-4xl md:text-5xl mb-4">Geschiedenis</h1>
           <p className="text-muted-foreground text-lg">
