@@ -26,9 +26,9 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[linear-gradient(160deg,_#651018_0%,_#94131b_16%,_#d9151b_42%,_#c21820_68%,_#741620_100%)] bg-fixed text-foreground">
+    <div className="min-h-screen flex flex-col bg-[linear-gradient(160deg,_#47070e_0%,_#7a0d15_18%,_#b3121d_44%,_#db181f_68%,_#7f1120_100%)] bg-fixed text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/15 bg-white/78 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/10 text-white backdrop-blur-md">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
@@ -88,7 +88,7 @@ export function Layout() {
                 </button>
                 {djMenuOpen && (
                   <div className="absolute top-full left-0 pt-2 z-50">
-                    <div className="bg-white border border-border shadow-xl py-2 w-56 rounded-lg">
+                    <div className="bg-popover text-popover-foreground border border-border shadow-xl py-2 w-56 rounded-lg">
                       <a
                         href="https://nl.wikipedia.org/wiki/Bart_Arens"
                         target="_blank"
@@ -153,7 +153,7 @@ export function Layout() {
                     className="absolute top-full right-0 pt-2 z-50"
                     onMouseLeave={() => setUserMenuOpen(false)}
                   >
-                    <div className="bg-white border border-border rounded-lg shadow-xl py-2 w-56">
+                    <div className="bg-popover text-popover-foreground border border-border rounded-lg shadow-xl py-2 w-56">
                     <Link
                       to="/playlists"
                       className="block px-4 py-2 hover:bg-secondary transition-colors"
@@ -209,7 +209,7 @@ export function Layout() {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <nav className="lg:hidden py-4 border-t border-border">
+            <nav className="lg:hidden py-4 border-t border-border text-white">
               <Link
                 to="/"
                 className={`block py-2 hover:text-primary transition-colors ${
@@ -341,7 +341,7 @@ export function Layout() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-16 border-t border-white/12 bg-white/72 py-12 backdrop-blur-md">
+      <footer className="mt-16 border-t border-white/10 bg-black/10 py-12 text-white backdrop-blur-md">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>

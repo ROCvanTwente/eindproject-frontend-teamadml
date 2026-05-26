@@ -102,7 +102,7 @@ export function FAQPage() {
             </p>
             <a
               href="/contact"
-              className="inline-block bg-white text-primary px-6 py-3 rounded-lg hover:bg-gray-100 transition-colors font-semibold"
+              className="inline-block text-primary px-6 py-3 rounded-lg hover:bg-gray-100 transition-colors font-semibold"
             >
               Contacteer ons
             </a>

@@ -62,7 +62,7 @@ export function ListPage() {
   return (
     <div className="pb-12">
       {/* Page Header */}
-      <section className="bg-white py-8 border-b border-border">
+      <section className="py-8">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">De Top 2000</h1>
           <p className="text-muted-foreground">

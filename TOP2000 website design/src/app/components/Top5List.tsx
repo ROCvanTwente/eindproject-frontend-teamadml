@@ -46,7 +46,7 @@ const top5Songs2024 = [
 
 export function Top5List() {
   return (
-    <section className="py-16 bg-white">
+    <section className="py-16 text-foreground">
       <div className="container mx-auto px-4">
         <div className="mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-2">Top 5 van 2024</h2>

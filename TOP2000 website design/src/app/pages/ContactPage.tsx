@@ -18,7 +18,7 @@ export function ContactPage() {
   return (
     <div className="pb-12">
       {/* Page Header */}
-      <section className="bg-gradient-to-r from-secondary via-white to-secondary py-12 border-b border-border">
+      <section className=" py-12">
         <div className="container mx-auto px-4">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact</h1>
           <p className="text-muted-foreground text-lg">
@@ -83,7 +83,7 @@ export function ContactPage() {
                     href="https://www.facebook.com/nporadio2"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
                   >
                     <span className="sr-only">Facebook</span>
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -94,7 +94,7 @@ export function ContactPage() {
                     href="https://twitter.com/nporadio2"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
                   >
                     <span className="sr-only">Twitter</span>
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -105,7 +105,7 @@ export function ContactPage() {
                     href="https://www.instagram.com/nporadio2"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
                   >
                     <span className="sr-only">Instagram</span>
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
