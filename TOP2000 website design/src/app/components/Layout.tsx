@@ -26,9 +26,9 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-[linear-gradient(160deg,_#651018_0%,_#94131b_16%,_#d9151b_42%,_#c21820_68%,_#741620_100%)] bg-fixed text-foreground">
       {/* Header */}
-      <header className="bg-white border-b border-border sticky top-0 z-50">
+      <header className="sticky top-0 z-50 border-b border-white/15 bg-white/78 backdrop-blur-md">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
@@ -336,12 +336,12 @@ export function Layout() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow">
+      <main className="flex-grow bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.12),_transparent_24%)]">
         <Outlet />
       </main>
 
       {/* Footer */}
-      <footer className="bg-muted mt-16 py-12 border-t border-border">
+      <footer className="mt-16 border-t border-white/12 bg-white/72 py-12 backdrop-blur-md">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
