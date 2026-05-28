@@ -1,15 +1,60 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Music } from 'lucide-react';
-import { mockSongs } from '../data/mockData';
+import { AlertCircle, Loader2, Music, Search } from 'lucide-react';
+import { loadSongsCatalog, type ApiEndpointDiagnostic, type BackendSong } from '../data/api';
+
+type FetchState = 'idle' | 'loading' | 'success' | 'error';
+const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
 export function SongsPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [songs, setSongs] = useState<BackendSong[]>([]);
+  const [fetchState, setFetchState] = useState<FetchState>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [diagnostic, setDiagnostic] = useState<ApiEndpointDiagnostic>({
+    url: '/api/songs',
+    ok: false,
+    detail: 'Nog geen request uitgevoerd.',
+  });
+  const [loadedAt, setLoadedAt] = useState<string>();
 
-  const filteredSongs = mockSongs
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSongs = async () => {
+      setFetchState('loading');
+      setErrorMessage('');
+
+      const result = await loadSongsCatalog();
+
+      if (!isMounted) {
+        return;
+      }
+
+      setSongs(result.data);
+      setDiagnostic(result.diagnostic);
+      setLoadedAt(result.loadedAt);
+
+      if (!result.ok) {
+        setFetchState('error');
+        setErrorMessage(result.message ?? 'Nummers konden niet worden geladen.');
+        return;
+      }
+
+      setFetchState('success');
+    };
+
+    void loadSongs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filteredSongs = [...songs]
     .filter(song =>
       song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      song.artistName.toLowerCase().includes(searchTerm.toLowerCase())
+      (song.artistName ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => a.title.localeCompare(b.title));
 
@@ -26,6 +71,23 @@ export function SongsPage() {
       </section>
 
       <div className="container mx-auto px-4 mt-8">
+        {fetchState === 'loading' && (
+          <div className="bg-card border border-border rounded-lg p-8 flex items-center justify-center gap-3 text-muted-foreground mb-8">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Nummers worden geladen...
+          </div>
+        )}
+
+        {fetchState === 'error' && (
+          <div className="bg-destructive/5 border border-destructive/30 rounded-lg p-6 mb-8">
+            <div className="flex items-center gap-3 text-destructive font-semibold mb-2">
+              <AlertCircle className="w-5 h-5" />
+              Backend data kon niet worden geladen
+            </div>
+            <p className="text-sm text-muted-foreground">{errorMessage}</p>
+          </div>
+        )}
+
         {/* Search */}
         <div className="max-w-2xl mx-auto mb-8">
           <div className="relative">
@@ -49,8 +111,8 @@ export function SongsPage() {
         <div className="max-w-4xl mx-auto space-y-3">
           {filteredSongs.map(song => (
             <Link
-              key={song.id}
-              to={`/nummer/${song.id}`}
+              key={song.songId}
+              to={`/nummer/${song.songId}`}
               className="block bg-card border border-border p-4 hover:shadow-sm transition-all group"
             >
               <div className="flex items-center gap-4">
@@ -70,11 +132,13 @@ export function SongsPage() {
                     {song.title}
                   </h3>
                   <p className="text-muted-foreground">
-                    {song.artistName} • {song.year}
+                    {song.artistName ?? `Artiest ${song.artistId}`} • {song.releaseYear}
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    {song.timesListed} {song.timesListed === 1 ? 'keer' : 'keer'} genoteerd
-                  </p>
+                  {typeof song.timesListed === 'number' && (
+                    <p className="text-sm text-muted-foreground">
+                      {song.timesListed} keer genoteerd
+                    </p>
+                  )}
                 </div>
               </div>
             </Link>
@@ -89,6 +153,23 @@ export function SongsPage() {
               Probeer een andere zoekterm
             </p>
           </div>
+        )}
+
+        {isDevelopment && (
+          <details className="mt-8 rounded-lg border border-dashed border-border bg-card/60 p-4 text-sm text-muted-foreground">
+            <summary className="cursor-pointer font-semibold text-foreground">
+              Debug: /api/songs
+            </summary>
+            <div className="mt-3 space-y-2">
+              <p><span className="font-medium text-foreground">Endpoint:</span> {diagnostic.url}</p>
+              <p><span className="font-medium text-foreground">Status:</span> {diagnostic.ok ? `OK${diagnostic.status ? ` (${diagnostic.status})` : ''}` : `Fout${diagnostic.status ? ` (${diagnostic.status})` : ''}`}</p>
+              <p><span className="font-medium text-foreground">Detail:</span> {diagnostic.detail}</p>
+              <p><span className="font-medium text-foreground">Items:</span> {songs.length}</p>
+              {loadedAt && (
+                <p><span className="font-medium text-foreground">Laatst geladen:</span> {new Date(loadedAt).toLocaleString('nl-NL')}</p>
+              )}
+            </div>
+          </details>
         )}
       </div>
     </div>

@@ -1,23 +1,59 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, Loader2, Music2, RefreshCw, Users } from 'lucide-react';
-import type { Artist, Song } from '../data/mockData';
+import { loadAdminCatalog, type BackendArtist, type BackendSong } from '../data/api';
 
-const BACKEND_URL = 'https://top2000teamadml.runasp.net';
 const ITEMS_PER_PAGE = 10;
 
 type FetchState = 'idle' | 'loading' | 'success' | 'error';
-type BackendArtist = Omit<Artist, 'id'> & {
-	artistId: number;
-};
-type BackendSong = Omit<Song, 'id'> & {
-	songId: number;
-	releaseYear: number;
-	artistId: number;
-	youtube?: string;
-};
 type SortDirection = 'asc' | 'desc';
 type ArtistSortKey = 'artistId' | 'name' | 'songCount';
 type SongSortKey = 'songId' | 'title' | 'artistName' | 'releaseYear';
+type EndpointKey = 'artists' | 'songs';
+type EndpointDiagnostic = {
+	key: EndpointKey;
+	label: string;
+	url: string;
+	status: FetchState;
+	httpStatus?: number;
+	detail: string;
+	expectedFields: string[];
+};
+
+const ADMIN_ENDPOINTS: Record<EndpointKey, Omit<EndpointDiagnostic, 'status' | 'httpStatus' | 'detail'>> = {
+	artists: {
+		key: 'artists',
+		label: 'Artiesten',
+		url: '/api/artists',
+		expectedFields: ['artistId', 'name', 'website'],
+	},
+	songs: {
+		key: 'songs',
+		label: 'Nummers',
+		url: '/api/songs',
+		expectedFields: ['songId', 'title', 'artistId', 'releaseYear', 'youtube'],
+	},
+};
+
+const createEndpointDiagnostics = (status: FetchState): Record<EndpointKey, EndpointDiagnostic> => ({
+	artists: {
+		...ADMIN_ENDPOINTS.artists,
+		status,
+		detail: status === 'loading' ? 'Request wordt uitgevoerd...' : 'Nog geen request uitgevoerd.',
+	},
+	songs: {
+		...ADMIN_ENDPOINTS.songs,
+		status,
+		detail: status === 'loading' ? 'Request wordt uitgevoerd...' : 'Nog geen request uitgevoerd.',
+	},
+});
+
+function formatEndpointFailure(diagnostic: EndpointDiagnostic) {
+	if (typeof diagnostic.httpStatus === 'number') {
+		return `${diagnostic.url} returned ${diagnostic.httpStatus}`;
+	}
+
+	return `${diagnostic.url} failed before a response was received`;
+}
 
 
 function paginateItems<T>(items: T[], currentPage: number) {
@@ -160,6 +196,9 @@ export function AdminPanel() {
 	const [songs, setSongs] = useState<BackendSong[]>([]);
 	const [fetchState, setFetchState] = useState<FetchState>('idle');
 	const [errorMessage, setErrorMessage] = useState('');
+	const [endpointDiagnostics, setEndpointDiagnostics] = useState<Record<EndpointKey, EndpointDiagnostic>>(
+		() => createEndpointDiagnostics('idle')
+	);
 	const [artistPage, setArtistPage] = useState(1);
 	const [songPage, setSongPage] = useState(1);
 	const [artistIdFilter, setArtistIdFilter] = useState('');
@@ -176,37 +215,43 @@ export function AdminPanel() {
 	const loadAdminData = async () => {
 		setFetchState('loading');
 		setErrorMessage('');
+		setEndpointDiagnostics(createEndpointDiagnostics('loading'));
 
 		try {
-			const [artistsResponse, songsResponse] = await Promise.all([
-				fetch(`${BACKEND_URL}/api/artists`, { cache: 'no-store' }),
-				fetch(`${BACKEND_URL}/api/songs`, { cache: 'no-store' }),
-			]);
+			const adminCatalog = await loadAdminCatalog();
 
-			if (!artistsResponse.ok || !songsResponse.ok) {
-				const failedEndpoints = [
-					!artistsResponse.ok ? `/api/artists (${artistsResponse.status})` : null,
-					!songsResponse.ok ? `/api/songs (${songsResponse.status})` : null,
-				].filter(Boolean).join(', ');
+			const nextDiagnostics: Record<EndpointKey, EndpointDiagnostic> = {
+				artists: {
+					...ADMIN_ENDPOINTS.artists,
+					status: adminCatalog.diagnostics.artists.ok ? 'success' : 'error',
+					httpStatus: adminCatalog.diagnostics.artists.status,
+					detail: adminCatalog.diagnostics.artists.detail,
+				},
+				songs: {
+					...ADMIN_ENDPOINTS.songs,
+					status: adminCatalog.diagnostics.songs.ok ? 'success' : 'error',
+					httpStatus: adminCatalog.diagnostics.songs.status,
+					detail: adminCatalog.diagnostics.songs.detail,
+				},
+			};
 
-				throw new Error(`Backend request failed for ${failedEndpoints}`);
-			}
+			setEndpointDiagnostics(nextDiagnostics);
 
-			const [artistsData, songsData] = await Promise.all([
-				artistsResponse.json() as Promise<BackendArtist[]>,
-				songsResponse.json() as Promise<BackendSong[]>,
-			]);
-
-			setArtists(Array.isArray(artistsData) ? artistsData : []);
-			setSongs(
-				Array.isArray(songsData)
-					? [...songsData].sort((leftSong, rightSong) => leftSong.songId - rightSong.songId)
-					: []
-			);
+			setArtists(adminCatalog.artists);
+			setSongs([...adminCatalog.songs].sort((leftSong, rightSong) => leftSong.songId - rightSong.songId));
 			setArtistPage(1);
 			setSongPage(1);
+
+			if (!adminCatalog.ok) {
+				console.error('Admin backend request failed', adminCatalog);
+				setFetchState('error');
+				setErrorMessage(adminCatalog.message ?? 'Unknown backend error');
+				return;
+			}
+
 			setFetchState('success');
 		} catch (error) {
+			console.error('Admin panel failed to load backend data', error);
 			setFetchState('error');
 			setErrorMessage(error instanceof Error ? error.message : 'Unknown backend error');
 		}
@@ -263,6 +308,7 @@ export function AdminPanel() {
 	const safeSongPage = Math.min(songPage, songTotalPages);
 	const paginatedArtists = paginateItems(sortedArtists, safeArtistPage);
 	const paginatedSongs = paginateItems(sortedSongs, safeSongPage);
+	const diagnosticsList = Object.values(endpointDiagnostics);
 
 	const toggleArtistSort = (key: ArtistSortKey) => {
 		setArtistSort(currentSort => ({
@@ -282,7 +328,7 @@ export function AdminPanel() {
 
 	return (
 		<div className="pb-12">
-			<section className="bg-gradient-to-r from-destructive/10 via-white to-primary/10 py-12 border-b border-border">
+			<section className="py-12">
 				<div className="container mx-auto px-4">
 					<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 						<div>
@@ -331,7 +377,7 @@ export function AdminPanel() {
 						<div className="text-lg font-semibold">
 							{fetchState === 'loading' && 'Backend laden...'}
 							{fetchState === 'success' && 'Backend gekoppeld'}
-							{fetchState === 'error' && 'Backend fout'}
+							{fetchState === 'error' && 'Backend returned 500'}
 							{fetchState === 'idle' && 'Wachten'}
 						</div>
 						{errorMessage && (
@@ -339,6 +385,40 @@ export function AdminPanel() {
 						)}
 					</div>
 				</div>
+
+				<section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+					{diagnosticsList.map(diagnostic => (
+						<div key={diagnostic.key} className="bg-card border border-border rounded-lg p-6 shadow-sm">
+							<div className="flex items-center justify-between gap-4 mb-3">
+								<div>
+									<h2 className="text-xl font-semibold">{diagnostic.label}</h2>
+									<p className="text-sm text-muted-foreground">{diagnostic.url}</p>
+								</div>
+								<div className={`rounded-full px-3 py-1 text-xs font-semibold ${
+									diagnostic.status === 'success'
+										? 'bg-emerald-500/10 text-emerald-700'
+										: diagnostic.status === 'error'
+											? 'bg-destructive/10 text-destructive'
+											: 'bg-secondary text-foreground'
+								}`}>
+									{diagnostic.status === 'success' && 'OK'}
+									{diagnostic.status === 'error' && `HTTP ${diagnostic.httpStatus ?? 'fout'}`}
+									{diagnostic.status === 'loading' && 'Laden'}
+									{diagnostic.status === 'idle' && 'Nog niet geladen'}
+								</div>
+							</div>
+							<p className="text-sm text-muted-foreground mb-4">{diagnostic.detail}</p>
+							<p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Verwachte velden</p>
+							<div className="flex flex-wrap gap-2">
+								{diagnostic.expectedFields.map(field => (
+									<span key={field} className="rounded-full bg-secondary px-3 py-1 text-xs text-foreground">
+										{field}
+									</span>
+								))}
+							</div>
+						</div>
+					))}
+				</section>
 
 				{fetchState === 'loading' && (
 					<div className="bg-card border border-border rounded-lg p-8 flex items-center justify-center gap-3 text-muted-foreground">
@@ -354,6 +434,9 @@ export function AdminPanel() {
 							Backend data kon niet worden geladen
 						</div>
 						<p className="text-sm text-muted-foreground">{errorMessage}</p>
+						<p className="text-sm text-muted-foreground mt-2">
+							De browser liet eerder een CORS-melding zien, maar de directe oorzaak is nu zichtbaar per endpoint hierboven.
+						</p>
 					</div>
 				)}
 

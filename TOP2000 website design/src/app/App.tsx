@@ -23,74 +23,13 @@ import { PlaylistDetailPage } from './pages/PlaylistDetailPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 
-const BACKEND_URL = 'https://top2000teamadml.runasp.net';
 const BACKEND_ENDPOINTS = [
-  { label: 'GET /api/artists', url: `${BACKEND_URL}/api/artists` },
-  { label: 'GET /api/songs', url: `${BACKEND_URL}/api/songs` },
-  { label: 'GET /api/top2000', url: `${BACKEND_URL}/api/top2000` },
+  { label: 'GET /api/artists', url: '/api/artists' },
+  { label: 'GET /api/songs', url: '/api/songs' },
+  { label: 'GET /api/top2000', url: '/api/top2000' },
 ];
 
 export default function App() {
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const checkBackendConnection = async () => {
-      const fetchEndpoint = async (label: string, url: string) => {
-        try {
-          const response = await fetch(url, {
-            method: 'GET',
-            cache: 'no-store',
-            signal: controller.signal,
-          });
-
-          if (!response.ok) {
-            const message = `${label}: ${response.status}`;
-            console.error(message);
-            return {
-              ok: false,
-              label,
-              url,
-              message,
-              data: undefined as unknown,
-            };
-          }
-
-          console.info(`${label}: ok`);
-
-          return {
-            ok: true,
-            label,
-            url,
-            message: `${label}: ok`,
-            data: undefined as unknown,
-          };
-        } catch (error) {
-          const message = `${label}: failed`;
-          console.error(message);
-          return {
-            ok: false,
-            label,
-            url,
-            message,
-            data: undefined as unknown,
-          };
-        }
-      };
-
-      const results = await Promise.all(
-        BACKEND_ENDPOINTS.map(({ label, url }) => fetchEndpoint(label, url))
-      );
-
-      console.info('Backend check done', results.map(result => result.message));
-    };
-
-    void checkBackendConnection();
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
-
   return (
     <BrowserRouter
       future={{

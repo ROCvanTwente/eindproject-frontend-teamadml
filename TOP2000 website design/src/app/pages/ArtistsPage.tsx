@@ -1,12 +1,57 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Users } from 'lucide-react';
-import { mockArtists } from '../data/mockData';
+import { AlertCircle, Loader2, Search, Users } from 'lucide-react';
+import { loadArtistsCatalog, type ApiEndpointDiagnostic, type BackendArtist } from '../data/api';
+
+type FetchState = 'idle' | 'loading' | 'success' | 'error';
+const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
 export function ArtistsPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [artists, setArtists] = useState<BackendArtist[]>([]);
+  const [fetchState, setFetchState] = useState<FetchState>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [diagnostic, setDiagnostic] = useState<ApiEndpointDiagnostic>({
+    url: '/api/artists',
+    ok: false,
+    detail: 'Nog geen request uitgevoerd.',
+  });
+  const [loadedAt, setLoadedAt] = useState<string>();
 
-  const filteredArtists = mockArtists
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadArtists = async () => {
+      setFetchState('loading');
+      setErrorMessage('');
+
+      const result = await loadArtistsCatalog();
+
+      if (!isMounted) {
+        return;
+      }
+
+      setArtists(result.data);
+      setDiagnostic(result.diagnostic);
+      setLoadedAt(result.loadedAt);
+
+      if (!result.ok) {
+        setFetchState('error');
+        setErrorMessage(result.message ?? 'Artiesten konden niet worden geladen.');
+        return;
+      }
+
+      setFetchState('success');
+    };
+
+    void loadArtists();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filteredArtists = [...artists]
     .filter(artist =>
       artist.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
@@ -25,6 +70,23 @@ export function ArtistsPage() {
       </section>
 
       <div className="container mx-auto px-4 mt-8">
+        {fetchState === 'loading' && (
+          <div className="bg-card border border-border rounded-lg p-8 flex items-center justify-center gap-3 text-muted-foreground mb-8">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Artiesten worden geladen...
+          </div>
+        )}
+
+        {fetchState === 'error' && (
+          <div className="bg-destructive/5 border border-destructive/30 rounded-lg p-6 mb-8">
+            <div className="flex items-center gap-3 text-destructive font-semibold mb-2">
+              <AlertCircle className="w-5 h-5" />
+              Backend data kon niet worden geladen
+            </div>
+            <p className="text-sm text-muted-foreground">{errorMessage}</p>
+          </div>
+        )}
+
         {/* Search */}
         <div className="max-w-2xl mx-auto mb-8">
           <div className="relative">
@@ -48,10 +110,10 @@ export function ArtistsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
           {filteredArtists.map(artist => (
             <div
-              key={artist.id}
+              key={artist.artistId}
               className="bg-card border border-border overflow-hidden hover:shadow-md transition-all group"
             >
-              <Link to={`/artiest/${artist.id}`}>
+              <Link to={`/artiest/${artist.artistId}`}>
                 <div className="aspect-square overflow-hidden bg-muted">
                   {artist.photoUrl ? (
                     <img
@@ -67,14 +129,16 @@ export function ArtistsPage() {
                 </div>
               </Link>
               <div className="p-4">
-                <Link to={`/artiest/${artist.id}`}>
+                <Link to={`/artiest/${artist.artistId}`}>
                   <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors truncate cursor-pointer">
                     {artist.name}
                   </h3>
                 </Link>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
-                    {artist.numberOfSongs} {artist.numberOfSongs === 1 ? 'nummer' : 'nummers'}
+                    {typeof artist.numberOfSongs === 'number'
+                      ? `${artist.numberOfSongs} ${artist.numberOfSongs === 1 ? 'nummer' : 'nummers'}`
+                      : 'Aantal nummers onbekend'}
                   </span>
                   <span className="text-primary hover:underline cursor-pointer">
                     Bekijk alle
@@ -93,6 +157,23 @@ export function ArtistsPage() {
               Probeer een andere zoekterm
             </p>
           </div>
+        )}
+
+        {isDevelopment && (
+          <details className="mt-8 rounded-lg border border-dashed border-border bg-card/60 p-4 text-sm text-muted-foreground">
+            <summary className="cursor-pointer font-semibold text-foreground">
+              Debug: /api/artists
+            </summary>
+            <div className="mt-3 space-y-2">
+              <p><span className="font-medium text-foreground">Endpoint:</span> {diagnostic.url}</p>
+              <p><span className="font-medium text-foreground">Status:</span> {diagnostic.ok ? `OK${diagnostic.status ? ` (${diagnostic.status})` : ''}` : `Fout${diagnostic.status ? ` (${diagnostic.status})` : ''}`}</p>
+              <p><span className="font-medium text-foreground">Detail:</span> {diagnostic.detail}</p>
+              <p><span className="font-medium text-foreground">Items:</span> {artists.length}</p>
+              {loadedAt && (
+                <p><span className="font-medium text-foreground">Laatst geladen:</span> {new Date(loadedAt).toLocaleString('nl-NL')}</p>
+              )}
+            </div>
+          </details>
         )}
       </div>
     </div>
