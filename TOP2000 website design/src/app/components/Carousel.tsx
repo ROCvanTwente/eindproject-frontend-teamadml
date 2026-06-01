@@ -30,7 +30,7 @@ export function Carousel() {
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 5000,
-    pauseOnHover: true,
+    pauseOnHover: false,
     arrows: true,
     fade: true,
   };
