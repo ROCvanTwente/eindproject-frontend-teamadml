@@ -49,7 +49,9 @@ export type BackendArtist = {
   name: string;
   website?: string;
   bio?: string;
+  biography?: string; // added to match backend
   photoUrl?: string;
+  photo?: string; // added to match backend
   wikiUrl?: string;
   numberOfSongs?: number;
 };
@@ -62,8 +64,11 @@ export type BackendSong = {
   youtube?: string;
   artistName?: string;
   albumCover?: string;
+  imgUrl?: string; // added to match backend
   lyricsPreview?: string;
+  lyrics?: string; // added to match backend
   timesListed?: number;
+  artist?: BackendArtist; // added to match backend
 };
 
 export const API_ENDPOINTS = {
@@ -82,9 +87,23 @@ function getResponseMessage(url: string, status: number, body: string) {
   return `${url} returned ${status}.`;
 }
 
-async function fetchJson<T>(url: string): Promise<ApiResult<T>> {
+async function fetchJson<T>(
+  url: string,
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+  bodyData?: unknown
+): Promise<ApiResult<T>> {
   try {
-    const response = await fetch(url, { cache: 'no-store' });
+    const options: RequestInit = {
+      method,
+      cache: 'no-store',
+    };
+    if (bodyData !== undefined) {
+      options.headers = {
+        'Content-Type': 'application/json',
+      };
+      options.body = JSON.stringify(bodyData);
+    }
+    const response = await fetch(url, options);
     const body = await response.text();
 
     if (!response.ok) {
@@ -96,12 +115,12 @@ async function fetchJson<T>(url: string): Promise<ApiResult<T>> {
       };
     }
 
-    if (body.trim().length === 0) {
+    if (method === 'DELETE' || response.status === 204 || body.trim().length === 0) {
       return {
-        ok: false,
+        ok: true,
         url,
         status: response.status,
-        message: `${url} returned an empty response body.`,
+        data: null as unknown as T,
       };
     }
 
@@ -204,12 +223,33 @@ export function fetchTop2000Years() {
   return fetchJson<number[]>(API_ENDPOINTS.top2000);
 }
 
-export function loadArtistsCatalog() {
-  return loadArrayEndpoint(fetchArtists, `${API_ENDPOINTS.artists} returned an unexpected JSON shape.`);
+export async function loadArtistsCatalog() {
+  const result = await loadArrayEndpoint(fetchArtists, `${API_ENDPOINTS.artists} returned an unexpected JSON shape.`);
+  if (result.ok && result.data) {
+    result.data = result.data.map(artist => ({
+      ...artist,
+      bio: artist.bio ?? artist.biography,
+      biography: artist.biography ?? artist.bio,
+      photoUrl: artist.photoUrl ?? artist.photo,
+      photo: artist.photo ?? artist.photoUrl,
+    }));
+  }
+  return result;
 }
 
-export function loadSongsCatalog() {
-  return loadArrayEndpoint(fetchSongs, `${API_ENDPOINTS.songs} returned an unexpected JSON shape.`);
+export async function loadSongsCatalog() {
+  const result = await loadArrayEndpoint(fetchSongs, `${API_ENDPOINTS.songs} returned an unexpected JSON shape.`);
+  if (result.ok && result.data) {
+    result.data = result.data.map(song => ({
+      ...song,
+      albumCover: song.albumCover ?? song.imgUrl,
+      imgUrl: song.imgUrl ?? song.albumCover,
+      lyricsPreview: song.lyricsPreview ?? song.lyrics,
+      lyrics: song.lyrics ?? song.lyricsPreview,
+      artistName: song.artistName ?? song.artist?.name,
+    }));
+  }
+  return result;
 }
 
 export async function loadAdminCatalog(): Promise<AdminCatalogLoadResult> {
@@ -220,6 +260,24 @@ export async function loadAdminCatalog(): Promise<AdminCatalogLoadResult> {
 
   const artists = toArrayData(artistsResult, `${API_ENDPOINTS.artists} returned an unexpected JSON shape.`);
   const songs = toArrayData(songsResult, `${API_ENDPOINTS.songs} returned an unexpected JSON shape.`);
+
+  const mappedArtists = artists.data.map(artist => ({
+    ...artist,
+    bio: artist.bio ?? artist.biography,
+    biography: artist.biography ?? artist.bio,
+    photoUrl: artist.photoUrl ?? artist.photo,
+    photo: artist.photo ?? artist.photoUrl,
+  }));
+
+  const mappedSongs = songs.data.map(song => ({
+    ...song,
+    albumCover: song.albumCover ?? song.imgUrl,
+    imgUrl: song.imgUrl ?? song.albumCover,
+    lyricsPreview: song.lyricsPreview ?? song.lyrics,
+    lyrics: song.lyrics ?? song.lyricsPreview,
+    artistName: song.artistName ?? song.artist?.name,
+  }));
+
   const diagnostics = {
     artists: artists.diagnostic,
     songs: songs.diagnostic,
@@ -228,17 +286,41 @@ export async function loadAdminCatalog(): Promise<AdminCatalogLoadResult> {
   if (artists.diagnostic.ok && songs.diagnostic.ok) {
     return {
       ok: true,
-      artists: artists.data,
-      songs: songs.data,
+      artists: mappedArtists,
+      songs: mappedSongs,
       diagnostics,
     };
   }
 
   return {
     ok: false,
-    artists: artists.data,
-    songs: songs.data,
+    artists: mappedArtists,
+    songs: mappedSongs,
     diagnostics,
     message: `Backend returned an error: ${formatFailedEndpoints(diagnostics)}.`,
   };
+}
+
+export function createArtist(artist: Omit<BackendArtist, 'artistId'>) {
+  return fetchJson<BackendArtist>(API_ENDPOINTS.artists, 'POST', artist);
+}
+
+export function updateArtist(id: number, artist: BackendArtist) {
+  return fetchJson<void>(`${API_ENDPOINTS.artists}/${id}`, 'PUT', artist);
+}
+
+export function deleteArtist(id: number) {
+  return fetchJson<void>(`${API_ENDPOINTS.artists}/${id}`, 'DELETE');
+}
+
+export function createSong(song: Omit<BackendSong, 'songId'>) {
+  return fetchJson<BackendSong>(API_ENDPOINTS.songs, 'POST', song);
+}
+
+export function updateSong(id: number, song: BackendSong) {
+  return fetchJson<void>(`${API_ENDPOINTS.songs}/${id}`, 'PUT', song);
+}
+
+export function deleteSong(id: number) {
+  return fetchJson<void>(`${API_ENDPOINTS.songs}/${id}`, 'DELETE');
 }

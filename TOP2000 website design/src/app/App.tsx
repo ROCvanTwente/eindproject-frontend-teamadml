@@ -22,6 +22,7 @@ import { CreatePlaylistPage } from './pages/CreatePlaylistPage';
 import { PlaylistDetailPage } from './pages/PlaylistDetailPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
+import { Toaster } from './components/ui/sonner';
 
 const BACKEND_ENDPOINTS = [
   { label: 'GET /api/artists', url: '/api/artists' },
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="register" element={<RegisterPage />} />
         </Route>
       </Routes>
+      <Toaster />
     </BrowserRouter>
   );
 }
