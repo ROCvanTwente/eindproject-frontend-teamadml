@@ -29,8 +29,8 @@ export function Carousel() {
     slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 5000,
-    pauseOnHover: true,
+      autoplaySpeed: 5000,
+      pauseOnHover: false,
     arrows: true,
     fade: true,
   };
