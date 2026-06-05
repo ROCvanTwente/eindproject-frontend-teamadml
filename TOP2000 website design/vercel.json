@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://top2000teamadml.runasp.net/api/:path*"
+      "destination": "https://miractopbas.runasp.net/api/:path*"
     }
   ]
 }

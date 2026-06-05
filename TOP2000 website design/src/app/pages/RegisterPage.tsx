@@ -4,20 +4,49 @@ import { Link } from 'react-router-dom';
 
 export function RegisterPage() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    username: '',
     password: '',
     confirmPassword: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    // Check of de wachtwoorden hetzelfde zijn
     if (formData.password !== formData.confirmPassword) {
-      alert('Wachtwoorden komen niet overeen!');
+      setErrorMessage('Wachtwoorden komen niet overeen!');
       return;
     }
-    alert('Registratie succesvol! Je kunt nu inloggen.');
-    window.location.href = '/login';
+
+    try {
+        const response = await fetch('http://localhost:5229/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password
+        })
+      });
+
+      if (response.ok) {
+        setSuccessMessage('Account succesvol aangemaakt! Je wordt doorgestuurd naar inloggen...');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      } else {
+        setErrorMessage('Er ging iets mis. Bestaat deze gebruikersnaam misschien al?');
+      }
+    } catch (error) {
+      console.error("Fout bij registreren:", error);
+      setErrorMessage('Kan de server niet bereiken. Staat je backend aan?');
+    }
   };
 
   return (
@@ -27,7 +56,7 @@ export function RegisterPage() {
         <div className="container mx-auto px-4">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Account aanmaken</h1>
           <p className="text-muted-foreground text-lg">
-            Maak een account aan om je eigen playlists te maken
+            Maak een account aan om toegang te krijgen
           </p>
         </div>
       </section>
@@ -35,34 +64,32 @@ export function RegisterPage() {
       <div className="container mx-auto px-4 mt-12">
         <div className="max-w-md mx-auto">
           <div className="bg-card border border-border rounded-lg p-8 shadow-md">
+            
+            {/* Meldingen tonen */}
+            {errorMessage && (
+              <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                {errorMessage}
+              </div>
+            )}
+            {successMessage && (
+              <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm">
+                {successMessage}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="name" className="block mb-2">
-                  Naam
+                <label htmlFor="username" className="block mb-2">
+                  Gebruikersnaam
                 </label>
                 <input
                   type="text"
-                  id="name"
+                  id="username"
                   required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input-background"
-                  placeholder="Jouw naam"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="email" className="block mb-2">
-                  E-mailadres
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input-background"
-                  placeholder="jouw@email.nl"
+                  placeholder="Kies een gebruikersnaam"
                 />
               </div>
 
@@ -104,10 +131,6 @@ export function RegisterPage() {
                   Ik ga akkoord met de{' '}
                   <a href="#" className="text-primary hover:underline">
                     algemene voorwaarden
-                  </a>{' '}
-                  en het{' '}
-                  <a href="#" className="text-primary hover:underline">
-                    privacybeleid
                   </a>
                 </label>
               </div>
@@ -129,17 +152,6 @@ export function RegisterPage() {
                 </Link>
               </p>
             </div>
-          </div>
-
-          <div className="mt-8 bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 rounded-lg p-6">
-            <h3 className="font-semibold mb-2">Met een account krijg je:</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Onbeperkt persoonlijke playlists maken</li>
-              <li>• Je favoriete nummers en artiesten bewaren</li>
-              <li>• Stemmen op de TOP 2000</li>
-              <li>• Gepersonaliseerde muziekaanbevelingen</li>
-              <li>• Toegang tot exclusieve content</li>
-            </ul>
           </div>
         </div>
       </div>

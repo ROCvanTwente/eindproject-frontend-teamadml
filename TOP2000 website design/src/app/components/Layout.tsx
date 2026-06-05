@@ -145,7 +145,11 @@ export function Layout() {
                   onMouseEnter={() => setUserMenuOpen(true)}
                   className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors cursor-pointer"
                 >
-                  <User className="w-5 h-5" />
+                  {localStorage.getItem('token') ? (
+                    <span className="text-sm font-semibold">{localStorage.getItem('username')}</span>
+                  ) : (
+                    <User className="w-5 h-5" />
+                  )}
                   <ChevronDown className="w-4 h-4" />
                 </button>
                 {userMenuOpen && (
@@ -154,45 +158,29 @@ export function Layout() {
                     onMouseLeave={() => setUserMenuOpen(false)}
                   >
                     <div className="bg-popover text-popover-foreground border border-border rounded-lg shadow-xl py-2 w-56">
-                    <Link
-                      to="/playlists"
-                      className="block px-4 py-2 hover:bg-secondary transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <ListMusic className="w-4 h-4" />
-                        Mijn Playlists
-                      </div>
-                    </Link>
-                    <div className="border-t border-border my-1"></div>
-                    <Link
-                      to="/admin"
-                      className="block px-4 py-2 hover:bg-secondary transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4" />
-                        Admin Panel
-                      </div>
-                    </Link>
-                    <div className="border-t border-border my-1"></div>
-                    <Link
-                      to="/login"
-                      className="block px-4 py-2 hover:bg-secondary transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <LogIn className="w-4 h-4" />
-                        Inloggen
-                      </div>
-                    </Link>
-                    <Link
-                      to="/register"
-                      className="block px-4 py-2 hover:bg-secondary transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      Account aanmaken
-                    </Link>
+                      {localStorage.getItem('token') ? (
+                        <>
+                          <Link to="/playlists" className="block px-4 py-2 hover:bg-secondary transition-colors" onClick={() => setUserMenuOpen(false)}>
+                            <div className="flex items-center gap-2"><ListMusic className="w-4 h-4" /> Mijn Playlists</div>
+                          </Link>
+                          <Link to="/admin" className="block px-4 py-2 hover:bg-secondary transition-colors" onClick={() => setUserMenuOpen(false)}>
+                            <div className="flex items-center gap-2"><Shield className="w-4 h-4" /> Admin Panel</div>
+                          </Link>
+                          <div className="border-t border-border my-1"></div>
+                          <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors text-red-500">
+                            Uitloggen
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Link to="/login" className="block px-4 py-2 hover:bg-secondary transition-colors" onClick={() => setUserMenuOpen(false)}>
+                            <div className="flex items-center gap-2"><LogIn className="w-4 h-4" /> Inloggen</div>
+                          </Link>
+                          <Link to="/register" className="block px-4 py-2 hover:bg-secondary transition-colors" onClick={() => setUserMenuOpen(false)}>
+                            Account aanmaken
+                          </Link>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
