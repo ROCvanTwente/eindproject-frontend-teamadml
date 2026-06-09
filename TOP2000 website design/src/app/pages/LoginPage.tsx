@@ -29,9 +29,13 @@ export function LoginPage() {
       if (response.ok) {
         const data = await response.json();
 
+        // Sla alle benodigde gegevens op!
         localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.username);
+        localStorage.setItem('role', data.role); // <--- Dit zorgt voor de Admin check!
 
-        window.location.href = "/admin"; 
+        // Stuur terug naar de homepagina zodat de layout herlaadt
+        window.location.href = "/"; 
       } else {
         setErrorMessage('Verkeerde gebruikersnaam of wachtwoord ingevuld.');
       }
