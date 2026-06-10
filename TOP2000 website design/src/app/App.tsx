@@ -62,6 +62,7 @@ export default function App() {
           <Route path="admin/artiesten" element={<AdminPanel />} />
           <Route path="admin/nummers" element={<AdminPanel />} />
           <Route path="admin/logboek" element={<AdminPanel />} />
+          <Route path="admin/gebruikers" element={<AdminPanel />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
         </Route>

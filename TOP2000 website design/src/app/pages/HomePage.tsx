@@ -1,7 +1,8 @@
 import { Carousel } from '../components/Carousel';
 import { Top5List } from '../components/Top5List';
 import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchTop2000Years, fetchSongs } from '../data/api';
 
 const articleData = [
   {
@@ -9,26 +10,54 @@ const articleData = [
     title: 'Het verhaal achter Bohemian Rhapsody',
     description: 'Ontdek waarom dit Queen-nummer al jaren de lijst aanvoert',
     image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600&h=400&fit=crop',
-    date: '15 december 2024'
+    date: '15 december 2026'
   },
   {
     id: 2,
     title: 'De ontwikkeling van de Top 2000 door de jaren heen',
     description: 'Van 1999 tot nu: hoe de lijst is veranderd',
     image: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=600&h=400&fit=crop',
-    date: '12 december 2024'
+    date: '12 december 2026'
   },
   {
     id: 3,
-    title: 'Nieuwkomers in de lijst van 2024',
+    title: 'Nieuwkomers in de lijst van 2026',
     description: 'Deze nieuwe nummers maken hun debuut',
     image: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=600&h=400&fit=crop',
-    date: '10 december 2024'
+    date: '10 december 2026'
   }
 ];
 
 export function HomePage() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [yearsCount, setYearsCount] = useState<number>(26);
+  const [songsCount, setSongsCount] = useState<number>(2000);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadStats = async () => {
+      try {
+        const [yearsRes, songsRes] = await Promise.all([
+          fetchTop2000Years(),
+          fetchSongs()
+        ]);
+        if (isMounted) {
+          if (yearsRes.ok && yearsRes.data) {
+            setYearsCount(yearsRes.data.length);
+          }
+          if (songsRes.ok && songsRes.data) {
+            setSongsCount(songsRes.data.length);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load homepage dynamic stats, using fallback defaults:', err);
+      }
+    };
+    void loadStats();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => ({
@@ -162,11 +191,11 @@ export function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Top 2000 in cijfers</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-primary text-white p-6 text-center">
-              <div className="text-4xl font-bold mb-1">26</div>
+              <div className="text-4xl font-bold mb-1">{yearsCount}</div>
               <div className="text-sm opacity-90">Jaren Top 2000</div>
             </div>
             <div className="bg-primary text-white p-6 text-center">
-              <div className="text-4xl font-bold mb-1">2000</div>
+              <div className="text-4xl font-bold mb-1">{songsCount}</div>
               <div className="text-sm opacity-90">Nummers</div>
             </div>
             <div className="bg-primary text-white p-6 text-center">
