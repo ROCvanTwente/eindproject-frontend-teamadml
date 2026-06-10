@@ -324,3 +324,26 @@ export function updateSong(id: number, song: BackendSong) {
 export function deleteSong(id: number) {
   return fetchJson<void>(`${API_ENDPOINTS.songs}/${id}`, 'DELETE');
 }
+
+export type AuditAction = 'TOEVOEGEN' | 'BEWERKEN' | 'VERWIJDEREN' | 'SYSTEEM';
+export type AuditEntityType = 'NUMMER' | 'ARTIEST' | 'SYSTEEM';
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  action: AuditAction;
+  entityType: AuditEntityType;
+  name: string;
+  details: string;
+}
+
+export function fetchAuditLogs() {
+  return fetchJson<AuditLogEntry[]>('/api/audit-logs');
+}
+
+export function createAuditLog(log: Omit<AuditLogEntry, 'id' | 'timestamp'> & { id?: string; timestamp?: string }) {
+  return fetchJson<AuditLogEntry>('/api/audit-logs', 'POST', log);
+}
+
+export function clearAuditLogs() {
+  return fetchJson<void>('/api/audit-logs', 'DELETE');
+}

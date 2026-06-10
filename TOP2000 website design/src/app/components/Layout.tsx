@@ -145,7 +145,11 @@ export function Layout() {
                   onMouseEnter={() => setUserMenuOpen(true)}
                   className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors cursor-pointer"
                 >
-                  <User className="w-5 h-5" />
+                  {localStorage.getItem('token') ? (
+                    <span className="text-sm font-semibold">{localStorage.getItem('username')}</span>
+                  ) : (
+                    <User className="w-5 h-5" />
+                  )}
                   <ChevronDown className="w-4 h-4" />
                 </button>
                 {userMenuOpen && (
@@ -154,45 +158,68 @@ export function Layout() {
                     onMouseLeave={() => setUserMenuOpen(false)}
                   >
                     <div className="bg-popover text-popover-foreground border border-border rounded-lg shadow-xl py-2 w-56">
-                    <Link
-                      to="/playlists"
-                      className="block px-4 py-2 hover:bg-secondary transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <ListMusic className="w-4 h-4" />
-                        Mijn Playlists
-                      </div>
-                    </Link>
-                    <div className="border-t border-border my-1"></div>
-                    <Link
-                      to="/admin"
-                      className="block px-4 py-2 hover:bg-secondary transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4" />
-                        Admin Panel
-                      </div>
-                    </Link>
-                    <div className="border-t border-border my-1"></div>
-                    <Link
-                      to="/login"
-                      className="block px-4 py-2 hover:bg-secondary transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <LogIn className="w-4 h-4" />
-                        Inloggen
-                      </div>
-                    </Link>
-                    <Link
-                      to="/register"
-                      className="block px-4 py-2 hover:bg-secondary transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      Account aanmaken
-                    </Link>
+                      {localStorage.getItem('token') ? (
+                        <>
+                          <Link
+                            to="/playlists"
+                            className="block px-4 py-2 hover:bg-secondary transition-colors"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <ListMusic className="w-4 h-4" />
+                              Mijn Playlists
+                            </div>
+                          </Link>
+                          
+                          {/* CHECK VOOR ADMIN ROL */}
+                          {localStorage.getItem('role') === 'Admin' && (
+                            <>
+                              <div className="border-t border-border my-1"></div>
+                              <Link
+                                  to="/admin"
+                                  className="block px-4 py-2 hover:bg-secondary transition-colors"
+                                  onClick={() => setUserMenuOpen(false)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Shield className="w-4 h-4" />
+                                  Admin Panel
+                                </div>
+                              </Link>
+                            </>
+                          )}
+
+                          <div className="border-t border-border my-1"></div>
+                          <button
+                            onClick={() => {
+                              localStorage.clear();
+                              window.location.reload();
+                            }}
+                            className="block w-full text-left px-4 py-2 hover:bg-secondary transition-colors text-red-500"
+                          >
+                            Uitloggen
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Link
+                            to="/login"
+                            className="block px-4 py-2 hover:bg-secondary transition-colors"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <LogIn className="w-4 h-4" />
+                              Inloggen
+                            </div>
+                          </Link>
+                          <Link
+                            to="/register"
+                            className="block px-4 py-2 hover:bg-secondary transition-colors"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            Account aanmaken
+                          </Link>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -304,32 +331,52 @@ export function Layout() {
               >
                 Contact
               </Link>
-              <Link
-                to="/playlists"
-                className={`block py-2 hover:text-primary transition-colors mt-2 pt-4 border-t border-border ${
-                  isActive('/playlists') || isActive('/playlist') ? 'text-primary font-semibold' : ''
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Mijn Playlists
-              </Link>
-              <div className="py-2 mt-2 pt-4 border-t border-border">
-                <div className="font-semibold mb-2">Admin</div>
+              {localStorage.getItem('token') && (
                 <Link
-                  to="/admin"
-                  className="block py-1 pl-4 text-sm hover:text-primary transition-colors"
+                  to="/playlists"
+                  className={`block py-2 hover:text-primary transition-colors mt-2 pt-4 border-t border-border ${
+                    isActive('/playlists') || isActive('/playlist') ? 'text-primary font-semibold' : ''
+                  }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Admin Panel
+                  Mijn Playlists
                 </Link>
-              </div>
-              <Link
-                to="/login"
-                className="block py-2 hover:text-primary transition-colors mt-2 pt-4 border-t border-border"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Inloggen
-              </Link>
+              )}
+
+              {/* CHECK VOOR ADMIN ROL IN MOBILE MENU */}
+              {localStorage.getItem('role') === 'Admin' && (
+                <div className="py-2 mt-2 pt-4 border-t border-border">
+                  <div className="font-semibold mb-2">Admin</div>
+                  <Link
+                    to="/admin"
+                    className="block py-1 pl-4 text-sm hover:text-primary transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Admin Panel
+                  </Link>
+                </div>
+              )}
+
+              {/* UITLOGGEN OF INLOGGEN IN MOBILE MENU */}
+              {localStorage.getItem('token') ? (
+                <button
+                  className="block w-full text-left py-2 hover:text-primary transition-colors mt-2 pt-4 border-t border-border text-red-500"
+                  onClick={() => {
+                    localStorage.clear();
+                    window.location.reload();
+                  }}
+                >
+                  Uitloggen
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  className="block py-2 hover:text-primary transition-colors mt-2 pt-4 border-t border-border"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Inloggen
+                </Link>
+              )}
             </nav>
           )}
         </div>
