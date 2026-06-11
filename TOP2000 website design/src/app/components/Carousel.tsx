@@ -154,19 +154,21 @@ export function Carousel() {
       {/* Custom style overrides for slick-carousel dots (bubbles) */}
       <style>{`
         .slick-dots {
-          bottom: 25px !important;
+          bottom: 40px !important;
           z-index: 20;
         }
         .slick-dots li {
           margin: 0 6px !important;
           width: 12px !important;
           height: 12px !important;
+          border-radius: 60% !important;
+          background: rgba(255, 255, 255, 0.3) !important;
         }
         .slick-dots li button {
           width: 12px !important;
           height: 12px !important;
           padding: 0 !important;
-          border-radius: 50% !important;
+          border-radius: 60% !important;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
         .slick-dots li button:before {
@@ -174,11 +176,12 @@ export function Carousel() {
         }
         .slick-dots li.slick-active button {
           background: #e11d48 !important; /* primary theme red/crimson */
-          transform: scale(1.25);
+          transform: scale(1.25) !important;
           box-shadow: 0 0 8px rgba(225, 29, 72, 0.6);
         }
         .slick-dots li:hover button {
-          background: rgba(255, 255, 255, 0.7) !important;
+          background: rgba(255, 0, 0, 1) !important;
+          transform: scale(1.25) !important;
         }
       `}</style>
     </section>

@@ -47,7 +47,7 @@ export function HomePage() {
 
   // Calculate Christmas Countdown
   useEffect(() => {
-    const targetDate = new Date('December 25, 2026 00:00:00').getTime();
+    const targetDate = new Date('December 31, 2026 23:59:59').getTime();
     const interval = setInterval(() => {
       const now = new Date().getTime();
       const difference = targetDate - now;
@@ -138,38 +138,38 @@ export function HomePage() {
       {/* Dynamic Event Dashboard (Countdown + Live Radio) */}
       <section className="relative -mt-6 md:-mt-8 z-20 text-foreground">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto bg-black/40 backdrop-blur-md border border-white/10 p-3 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
-            
+          <div className="max-w-4xl mx-auto bg-black/45 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+
             {/* Live Radio Simulator (Mini Player) */}
-            <div className="flex items-center gap-3 flex-grow min-w-0 w-full md:w-auto">
+            <div className="flex items-center gap-4 flex-grow min-w-0 w-full md:w-auto">
               <div className="relative flex-shrink-0">
-                <div className={`w-11 h-11 rounded-full overflow-hidden shadow-md border border-zinc-950 transition-transform relative ${isPlaying ? 'animate-spin-slow' : ''}`}>
+                <div className={`w-14 h-14 rounded-full overflow-hidden shadow-md border border-zinc-950 transition-transform relative ${isPlaying ? 'animate-spin-slow' : ''}`}>
                   <img src={currentSong.cover} alt="Song cover" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 m-auto w-2.5 h-2.5 bg-zinc-950 rounded-full border border-white/20"></div>
+                  <div className="absolute inset-0 m-auto w-3 h-3 bg-zinc-950 rounded-full border border-white/20"></div>
                 </div>
-                {/* Micro live badge */}
-                <span className="absolute -top-1 -left-1 bg-primary text-white text-[7px] font-extrabold px-1 rounded-sm uppercase tracking-wider scale-90">
+                {/* Live badge */}
+                <span className="absolute -top-1 -left-1 bg-primary text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
                   Live
                 </span>
               </div>
 
               <div className="min-w-0 flex-grow">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">NPO Radio 2 Live</span>
-                  <span className="text-[8px] font-bold text-primary bg-primary/10 px-1 rounded">Café</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">NPO Radio 2 Live</span>
+                  <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">Café</span>
                 </div>
-                <h4 className="text-xs font-bold text-white truncate leading-tight mt-0.5">{currentSong.title}</h4>
-                <p className="text-muted-foreground text-[10px] truncate">{currentSong.artist}</p>
+                <h4 className="text-sm font-bold text-white truncate mt-1 leading-snug">{currentSong.title}</h4>
+                <p className="text-muted-foreground text-xs truncate mt-0.5">{currentSong.artist}</p>
               </div>
 
-              {/* Tiny Equalizer & Controls */}
-              <div className="flex items-center gap-2.5 flex-shrink-0">
+              {/* Equalizer & Controls */}
+              <div className="flex items-center gap-3.5 flex-shrink-0">
                 {/* Equalizer */}
-                <div className="flex items-end gap-0.5 h-2.5">
+                <div className="flex items-end gap-1 h-4">
                   {[...Array(4)].map((_, i) => (
                     <span
                       key={i}
-                      className="bg-primary/90 w-0.5 rounded-t transition-all"
+                      className="bg-primary/95 w-1 rounded-t transition-all"
                       style={isPlaying ? {
                         height: '100%',
                         animation: 'soundEqualizerBar 1.2s ease-in-out infinite alternate',
@@ -179,55 +179,55 @@ export function HomePage() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-1 border-l border-white/10 pl-2">
+                <div className="flex items-center gap-1.5 border-l border-white/10 pl-3.5">
                   <button
                     onClick={() => setIsPlaying(!isPlaying)}
-                    className="p-1 bg-white/5 hover:bg-primary text-white rounded-md transition-all cursor-pointer flex items-center justify-center"
+                    className="p-1.5 bg-white/5 hover:bg-primary text-white rounded-md transition-all cursor-pointer flex items-center justify-center"
                     title={isPlaying ? 'Pauze' : 'Speel'}
                   >
-                    {isPlaying ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+                    {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
                   </button>
                   <button
                     onClick={handleSkipSong}
-                    className="p-1 text-muted-foreground hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+                    className="p-1.5 text-muted-foreground hover:text-white transition-colors cursor-pointer flex items-center justify-center"
                     title="Volgend nummer"
                   >
-                    <SkipForward className="w-3 h-3" />
+                    <SkipForward className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Vertical Divider (only on md screens) */}
-            <div className="hidden md:block h-8 w-px bg-white/15"></div>
+            <div className="hidden md:block h-10 w-px bg-white/15"></div>
 
             {/* Countdown Section */}
-            <div className="flex items-center gap-3 flex-shrink-0 justify-between md:justify-end w-full md:w-auto">
+            <div className="flex items-center gap-4 flex-shrink-0 justify-between md:justify-end w-full md:w-auto">
               <div className="flex flex-col text-left">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Aftellen</span>
-                <span className="text-[10px] font-semibold text-white/95 leading-tight">Start Top 2000</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Aftellen</span>
+                <span className="text-xs font-semibold text-white/95 leading-tight">Start Top 2000</span>
               </div>
 
               {/* Countdown Numbers */}
-              <div className="flex items-center gap-1">
-                <div className="bg-white/5 border border-white/5 py-1 px-2 rounded-lg text-center min-w-[36px]">
-                  <div className="text-xs font-bold text-primary leading-tight">{timeLeft.days}</div>
-                  <div className="text-[6px] text-muted-foreground uppercase tracking-widest font-semibold">d</div>
+              <div className="flex items-center gap-1.5">
+                <div className="bg-white/5 border border-white/5 py-1.5 px-2.5 rounded-xl text-center min-w-[42px]">
+                  <div className="text-sm font-extrabold text-primary leading-tight">{timeLeft.days}</div>
+                  <div className="text-[8px] text-muted-foreground uppercase tracking-wider font-semibold">d</div>
                 </div>
-                <div className="text-white/30 text-xs font-bold">:</div>
-                <div className="bg-white/5 border border-white/5 py-1 px-2 rounded-lg text-center min-w-[36px]">
-                  <div className="text-xs font-bold text-primary leading-tight">{timeLeft.hours}</div>
-                  <div className="text-[6px] text-muted-foreground uppercase tracking-widest font-semibold">u</div>
+                <div className="text-white/30 text-sm font-bold">:</div>
+                <div className="bg-white/5 border border-white/5 py-1.5 px-2.5 rounded-xl text-center min-w-[42px]">
+                  <div className="text-sm font-extrabold text-primary leading-tight">{timeLeft.hours}</div>
+                  <div className="text-[8px] text-muted-foreground uppercase tracking-wider font-semibold">u</div>
                 </div>
-                <div className="text-white/30 text-xs font-bold">:</div>
-                <div className="bg-white/5 border border-white/5 py-1 px-2 rounded-lg text-center min-w-[36px]">
-                  <div className="text-xs font-bold text-primary leading-tight">{timeLeft.minutes}</div>
-                  <div className="text-[6px] text-muted-foreground uppercase tracking-widest font-semibold">m</div>
+                <div className="text-white/30 text-sm font-bold">:</div>
+                <div className="bg-white/5 border border-white/5 py-1.5 px-2.5 rounded-xl text-center min-w-[42px]">
+                  <div className="text-sm font-extrabold text-primary leading-tight">{timeLeft.minutes}</div>
+                  <div className="text-[8px] text-muted-foreground uppercase tracking-wider font-semibold">m</div>
                 </div>
-                <div className="text-white/30 text-xs font-bold">:</div>
-                <div className="bg-white/5 border border-white/5 py-1 px-2 rounded-lg text-center min-w-[36px]">
-                  <div className="text-xs font-bold text-primary animate-pulse leading-tight">{timeLeft.seconds}</div>
-                  <div className="text-[6px] text-muted-foreground uppercase tracking-widest font-semibold">s</div>
+                <div className="text-white/30 text-sm font-bold">:</div>
+                <div className="bg-white/5 border border-white/5 py-1.5 px-2.5 rounded-xl text-center min-w-[42px]">
+                  <div className="text-sm font-extrabold text-primary animate-pulse leading-tight">{timeLeft.seconds}</div>
+                  <div className="text-[8px] text-muted-foreground uppercase tracking-wider font-semibold">s</div>
                 </div>
               </div>
             </div>
