@@ -57,7 +57,7 @@ const fallbackSongs = [
 
 export function Top5List() {
   const [songs, setSongs] = useState<SongDisplay[]>([]);
-  const [year, setYear] = useState<number>(2026);
+  const [year, setYear] = useState<number>(2024);
   const [loading, setLoading] = useState(true);
 
   // Statistics States
@@ -140,14 +140,10 @@ export function Top5List() {
         }
 
         const latestYear = Math.max(...yearsResult.data);
-<<<<<<< Updated upstream
-        
-=======
         if (isMounted) {
           setYear(latestYear);
         }
-
->>>>>>> Stashed changes
+ main
         const [currentResult, previousResult] = await Promise.all([
           loadTop2000ByYear(latestYear),
           loadTop2000ByYear(latestYear - 1),
