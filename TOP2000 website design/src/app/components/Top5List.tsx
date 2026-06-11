@@ -1,8 +1,10 @@
 import { Play, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 
 const top5Songs2024 = [
   {
+    id: 1,
     position: 1,
     title: 'Bohemian Rhapsody',
     artist: 'Queen',
@@ -11,6 +13,7 @@ const top5Songs2024 = [
     imageUrl: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=400&h=400&fit=crop'
   },
   {
+    id: 2,
     position: 2,
     title: 'Hotel California',
     artist: 'Eagles',
@@ -19,6 +22,7 @@ const top5Songs2024 = [
     imageUrl: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=400&h=400&fit=crop'
   },
   {
+    id: 3,
     position: 3,
     title: 'Stairway to Heaven',
     artist: 'Led Zeppelin',
@@ -27,6 +31,7 @@ const top5Songs2024 = [
     imageUrl: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=400&h=400&fit=crop'
   },
   {
+    id: 4,
     position: 4,
     title: 'Imagine',
     artist: 'John Lennon',
@@ -35,6 +40,7 @@ const top5Songs2024 = [
     imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'
   },
   {
+    id: 5,
     position: 5,
     title: 'Child in Time',
     artist: 'Deep Purple',
@@ -58,76 +64,81 @@ export function Top5List() {
             const change = song.previousPosition - song.position;
 
             return (
-              <motion.div
+              <Link
                 key={song.position}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-card shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-border group"
+                to={`/nummer/${song.id}`}
+                className="block"
               >
-                <div className="flex items-center gap-4 p-4 md:p-6">
-                  {/* Position Badge */}
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-primary flex items-center justify-center">
-                      <span className="text-white text-2xl md:text-3xl font-bold">
-                        {song.position}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Album Art */}
-                  <div className="hidden md:block flex-shrink-0">
-                    <img
-                      src={song.imageUrl}
-                      alt={`${song.title} album art`}
-                      className="w-20 h-20 rounded-lg object-cover shadow-md"
-                    />
-                  </div>
-
-                  {/* Song Info */}
-                  <div className="flex-grow min-w-0">
-                    <h3 className="text-lg md:text-2xl font-bold truncate group-hover:text-primary transition-colors">
-                      {song.title}
-                    </h3>
-                    <p className="text-muted-foreground text-sm md:text-base">
-                      {song.artist} • {song.year}
-                    </p>
-                  </div>
-
-                  {/* Change Indicator */}
-                  <div className="flex items-center gap-3">
-                    <div className="text-right hidden sm:block">
-                      <div className="flex items-center gap-2">
-                        {change > 0 ? (
-                          <>
-                            <TrendingUp className="w-5 h-5 text-green-600" />
-                            <span className="text-green-600 font-semibold text-lg">
-                              +{change}
-                            </span>
-                          </>
-                        ) : change < 0 ? (
-                          <>
-                            <TrendingDown className="w-5 h-5 text-red-600" />
-                            <span className="text-red-600 font-semibold text-lg">
-                              {change}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Minus className="w-5 h-5 text-muted-foreground" />
-                            <span className="text-muted-foreground font-semibold">-</span>
-                          </>
-                        )}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-card shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-border group"
+                >
+                  <div className="flex items-center gap-4 p-4 md:p-6">
+                    {/* Position Badge */}
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 md:w-16 md:h-16 bg-primary flex items-center justify-center">
+                        <span className="text-white text-2xl md:text-3xl font-bold">
+                          {song.position}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Play Button */}
-                    <button className="bg-primary text-primary-foreground p-4 rounded-full hover:bg-accent transition-colors shadow-lg hover:shadow-xl hover:scale-110 duration-300 cursor-pointer">
-                      <Play className="w-5 h-5 md:w-6 md:h-6 fill-current" />
-                    </button>
+                    {/* Album Art */}
+                    <div className="hidden md:block flex-shrink-0">
+                      <img
+                        src={song.imageUrl}
+                        alt={`${song.title} album art`}
+                        className="w-20 h-20 rounded-lg object-cover shadow-md"
+                      />
+                    </div>
+
+                    {/* Song Info */}
+                    <div className="flex-grow min-w-0">
+                      <h3 className="text-lg md:text-2xl font-bold truncate group-hover:text-primary transition-colors">
+                        {song.title}
+                      </h3>
+                      <p className="text-muted-foreground text-sm md:text-base">
+                        {song.artist} • {song.year}
+                      </p>
+                    </div>
+
+                    {/* Change Indicator */}
+                    <div className="flex items-center gap-3">
+                      <div className="text-right hidden sm:block">
+                        <div className="flex items-center gap-2">
+                          {change > 0 ? (
+                            <>
+                              <TrendingUp className="w-5 h-5 text-green-600" />
+                              <span className="text-green-600 font-semibold text-lg">
+                                +{change}
+                              </span>
+                            </>
+                          ) : change < 0 ? (
+                            <>
+                              <TrendingDown className="w-5 h-5 text-red-600" />
+                              <span className="text-red-600 font-semibold text-lg">
+                                {change}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Minus className="w-5 h-5 text-muted-foreground" />
+                              <span className="text-muted-foreground font-semibold">-</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Play Button */}
+                      <button className="bg-primary text-primary-foreground p-4 rounded-full hover:bg-accent transition-colors shadow-lg hover:shadow-xl hover:scale-110 duration-300 cursor-pointer">
+                        <Play className="w-5 h-5 md:w-6 md:h-6 fill-current" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              </Link>
             );
           })}
         </div>

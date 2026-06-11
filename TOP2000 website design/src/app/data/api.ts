@@ -54,6 +54,13 @@ export type BackendArtist = {
   numberOfSongs?: number;
 };
 
+type RawBackendArtist = BackendArtist & {
+  biography?: string | null;
+  photo?: string | null;
+  wiki?: string | null;
+  songs?: unknown[];
+};
+
 export type BackendSong = {
   songId: number;
   title: string;
@@ -64,6 +71,28 @@ export type BackendSong = {
   albumCover?: string;
   lyricsPreview?: string;
   timesListed?: number;
+};
+
+type RawBackendSong = BackendSong & {
+  imgUrl?: string | null;
+  lyrics?: string | null;
+  artist?: {
+    artistId?: number;
+    name?: string;
+  };
+  top2000Entries?: Array<{
+    year: number;
+    position: number;
+  }>;
+};
+
+export type SongDetailLoadResult = ApiResult<BackendSong> & {
+  rankings?: SongRanking[];
+};
+
+export type SongRanking = {
+  year: number;
+  position: number;
 };
 
 export const API_ENDPOINTS = {
@@ -192,12 +221,212 @@ function formatFailedEndpoints(diagnostics: AdminCatalogLoadResult['diagnostics'
     .join(', ');
 }
 
+export function normalizeBackendArtist(raw: RawBackendArtist): BackendArtist {
+  const numberOfSongs = raw.numberOfSongs
+    ?? (Array.isArray(raw.songs) ? raw.songs.length : undefined);
+
+  return {
+    artistId: raw.artistId,
+    name: raw.name,
+    website: raw.website,
+    bio: raw.bio ?? raw.biography ?? undefined,
+    photoUrl: raw.photoUrl ?? raw.photo ?? undefined,
+    wikiUrl: raw.wikiUrl ?? raw.wiki ?? undefined,
+    numberOfSongs,
+  };
+}
+
+let artistsCatalogCache: BackendArtist[] | null = null;
+let artistsCatalogPromise: Promise<BackendArtist[]> | null = null;
+
+async function loadArtistsCatalogCache(): Promise<BackendArtist[]> {
+  if (artistsCatalogCache) {
+    return artistsCatalogCache;
+  }
+
+  if (!artistsCatalogPromise) {
+    artistsCatalogPromise = fetchArtists().then((result) => {
+      if (!result.ok || !Array.isArray(result.data)) {
+        return [];
+      }
+
+      artistsCatalogCache = result.data.map((artist) => normalizeBackendArtist(artist as RawBackendArtist));
+      return artistsCatalogCache;
+    });
+  }
+
+  return artistsCatalogPromise;
+}
+
+export async function findArtistInCatalog(artistId: number): Promise<BackendArtist | undefined> {
+  const catalog = await loadArtistsCatalogCache();
+  return catalog.find((artist) => artist.artistId === artistId);
+}
+
+export async function fetchArtistForDetail(artistId: number): Promise<ApiResult<BackendArtist>> {
+  const byIdResult = await fetchJson<RawBackendArtist>(`${API_ENDPOINTS.artists}/${artistId}`);
+
+  if (byIdResult.ok) {
+    return {
+      ok: true,
+      url: byIdResult.url,
+      status: byIdResult.status,
+      data: normalizeBackendArtist(byIdResult.data),
+    };
+  }
+
+  const fromCatalog = await findArtistInCatalog(artistId);
+  if (fromCatalog) {
+    return {
+      ok: true,
+      url: `${API_ENDPOINTS.artists} (catalog)`,
+      status: 200,
+      data: fromCatalog,
+    };
+  }
+
+  return {
+    ok: false,
+    url: byIdResult.url,
+    status: byIdResult.status,
+    message: byIdResult.message,
+  };
+}
+
+export async function fetchSongsByArtist(artistId: number, artistName?: string): Promise<BackendSong[]> {
+  const byArtistResult = await fetchJson<RawBackendSong[]>(
+    `${API_ENDPOINTS.songs}/by-artist/${artistId}`,
+  );
+
+  if (byArtistResult.ok && Array.isArray(byArtistResult.data)) {
+    return byArtistResult.data.map((song) => {
+      const normalized = normalizeBackendSong(song);
+      return {
+        ...normalized,
+        artistName: normalized.artistName ?? artistName ?? song.artist?.name,
+      };
+    });
+  }
+
+  const catalog = await loadSongsCatalogCache();
+  return catalog
+    .filter((song) => song.artistId === artistId)
+    .map((song) => ({
+      ...song,
+      artistName: song.artistName ?? artistName,
+    }));
+}
+
 export function fetchArtists() {
   return fetchJson<BackendArtist[]>(API_ENDPOINTS.artists);
 }
 
 export function fetchSongs() {
   return fetchJson<BackendSong[]>(API_ENDPOINTS.songs);
+}
+
+let songsCatalogCache: BackendSong[] | null = null;
+let songsCatalogPromise: Promise<BackendSong[]> | null = null;
+
+function extractRankingsFromRaw(raw: RawBackendSong): SongRanking[] {
+  if (!Array.isArray(raw.top2000Entries)) {
+    return [];
+  }
+
+  return raw.top2000Entries
+    .map((entry) => ({ year: entry.year, position: entry.position }))
+    .sort((left, right) => right.year - left.year);
+}
+
+export function normalizeBackendSong(raw: RawBackendSong): BackendSong {
+  const timesListed = raw.timesListed
+    ?? (Array.isArray(raw.top2000Entries) ? raw.top2000Entries.length : undefined);
+
+  return {
+    songId: raw.songId,
+    title: raw.title,
+    artistId: raw.artistId,
+    releaseYear: raw.releaseYear ?? 0,
+    youtube: raw.youtube ?? undefined,
+    artistName: raw.artistName ?? raw.artist?.name,
+    albumCover: raw.albumCover ?? raw.imgUrl ?? undefined,
+    lyricsPreview: raw.lyricsPreview ?? raw.lyrics ?? undefined,
+    timesListed,
+  };
+}
+
+export function primeSongsCatalog(songs: RawBackendSong[] | BackendSong[]) {
+  if (songs.length === 0) {
+    return;
+  }
+
+  songsCatalogCache = songs.map((song) => normalizeBackendSong(song as RawBackendSong));
+  songsCatalogPromise = Promise.resolve(songsCatalogCache);
+}
+
+async function loadSongsCatalogCache(): Promise<BackendSong[]> {
+  if (songsCatalogCache) {
+    return songsCatalogCache;
+  }
+
+  if (!songsCatalogPromise) {
+    songsCatalogPromise = fetchSongs().then((result) => {
+      if (!result.ok || !Array.isArray(result.data)) {
+        songsCatalogPromise = null;
+        return [];
+      }
+
+      songsCatalogCache = result.data.map((song) => normalizeBackendSong(song as RawBackendSong));
+      return songsCatalogCache;
+    });
+  }
+
+  return songsCatalogPromise;
+}
+
+export async function findSongInCatalog(songId: number): Promise<BackendSong | undefined> {
+  const catalog = await loadSongsCatalogCache();
+  return catalog.find((song) => song.songId === songId);
+}
+
+export async function fetchSongForDetail(songId: number): Promise<SongDetailLoadResult> {
+  const byIdResult = await fetchJson<RawBackendSong>(`${API_ENDPOINTS.songs}/${songId}`);
+
+  if (byIdResult.ok) {
+    return {
+      ok: true,
+      url: byIdResult.url,
+      status: byIdResult.status,
+      data: normalizeBackendSong(byIdResult.data),
+      rankings: extractRankingsFromRaw(byIdResult.data),
+    };
+  }
+
+  const fromCatalog = await findSongInCatalog(songId);
+  if (fromCatalog) {
+    return {
+      ok: true,
+      url: `${API_ENDPOINTS.songs} (catalog)`,
+      status: 200,
+      data: fromCatalog,
+      rankings: [],
+    };
+  }
+
+  return {
+    ok: false,
+    url: byIdResult.url,
+    status: byIdResult.status,
+    message: byIdResult.message,
+  };
+}
+
+export function fetchSongById(songId: number) {
+  return fetchSongForDetail(songId);
+}
+
+export function fetchSongRankings(songId: number) {
+  return fetchJson<SongRanking[]>(`${API_ENDPOINTS.songs}/${songId}/rankings`);
 }
 
 export function fetchTop2000Years() {
@@ -208,8 +437,19 @@ export function loadArtistsCatalog() {
   return loadArrayEndpoint(fetchArtists, `${API_ENDPOINTS.artists} returned an unexpected JSON shape.`);
 }
 
-export function loadSongsCatalog() {
-  return loadArrayEndpoint(fetchSongs, `${API_ENDPOINTS.songs} returned an unexpected JSON shape.`);
+export async function loadSongsCatalog(): Promise<EndpointLoadResult<BackendSong>> {
+  const result = await loadArrayEndpoint(fetchSongs, `${API_ENDPOINTS.songs} returned an unexpected JSON shape.`);
+
+  if (result.ok && result.data.length > 0) {
+    const normalized = result.data.map((song) => normalizeBackendSong(song as RawBackendSong));
+    primeSongsCatalog(normalized);
+    return {
+      ...result,
+      data: normalized,
+    };
+  }
+
+  return result;
 }
 
 export async function loadAdminCatalog(): Promise<AdminCatalogLoadResult> {

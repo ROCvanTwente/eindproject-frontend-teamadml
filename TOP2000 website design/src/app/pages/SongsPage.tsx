@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, Loader2, Music, Search } from 'lucide-react';
 import { loadSongsCatalog, type ApiEndpointDiagnostic, type BackendSong } from '../data/api';
+import { PlayButton } from '../components/PlayButton';
 
 type FetchState = 'idle' | 'loading' | 'success' | 'error';
 const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost';
@@ -110,9 +111,8 @@ export function SongsPage() {
         {/* Songs List */}
         <div className="max-w-4xl mx-auto space-y-3">
           {filteredSongs.map(song => (
-            <Link
+            <div
               key={song.songId}
-              to={`/nummer/${song.songId}`}
               className="block bg-card border border-border p-4 hover:shadow-sm transition-all group"
             >
               <div className="flex items-center gap-4">
@@ -128,9 +128,14 @@ export function SongsPage() {
                   </div>
                 )}
                 <div className="flex-grow min-w-0">
-                  <h3 className="font-bold text-lg group-hover:text-primary transition-colors truncate">
-                    {song.title}
-                  </h3>
+                  <Link
+                    to={`/nummer/${song.songId}`}
+                    className="hover:text-primary transition-colors"
+                  >
+                    <h3 className="font-bold text-lg group-hover:text-primary transition-colors truncate">
+                      {song.title}
+                    </h3>
+                  </Link>
                   <p className="text-muted-foreground">
                     {song.artistName ?? `Artiest ${song.artistId}`} • {song.releaseYear}
                   </p>
@@ -140,8 +145,23 @@ export function SongsPage() {
                     </p>
                   )}
                 </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <PlayButton
+                    youtubeUrl={song.youtube}
+                    title={song.title}
+                    artist={song.artistName ?? `Artiest ${song.artistId}`}
+                    variant="icon"
+                  />
+                  <Link
+                    to={`/nummer/${song.songId}`}
+                    className="inline-flex items-center justify-center w-10 h-10 bg-card border border-border rounded-lg hover:bg-muted transition-colors"
+                    title="Details bekijken"
+                  >
+                    <Music className="w-5 h-5" />
+                  </Link>
+                </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
 

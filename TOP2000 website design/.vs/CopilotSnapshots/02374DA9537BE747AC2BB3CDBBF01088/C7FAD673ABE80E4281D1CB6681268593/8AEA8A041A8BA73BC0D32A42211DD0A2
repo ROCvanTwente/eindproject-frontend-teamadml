@@ -1,0 +1,253 @@
+﻿export type ApiError = {
+  url: string;
+  status?: number;
+  message: string;
+};
+
+export type ApiResult<T> =
+  | {
+      ok: true;
+      url: string;
+      status: number;
+      data: T;
+    }
+  | {
+      ok: false;
+      url: string;
+      status?: number;
+      message: string;
+    };
+
+export type ApiEndpointDiagnostic = {
+  url: string;
+  ok: boolean;
+  status?: number;
+  detail: string;
+};
+
+export type EndpointLoadResult<T> = {
+  ok: boolean;
+  data: T[];
+  diagnostic: ApiEndpointDiagnostic;
+  message?: string;
+  loadedAt: string;
+};
+
+export type AdminCatalogLoadResult = {
+  ok: boolean;
+  artists: BackendArtist[];
+  songs: BackendSong[];
+  diagnostics: {
+    artists: ApiEndpointDiagnostic;
+    songs: ApiEndpointDiagnostic;
+  };
+  message?: string;
+};
+
+export type BackendArtist = {
+  artistId: number;
+  name: string;
+  website?: string;
+  bio?: string;
+  photoUrl?: string;
+  wikiUrl?: string;
+  numberOfSongs?: number;
+};
+
+export type BackendSong = {
+  songId: number;
+  title: string;
+  artistId: number;
+  releaseYear: number;
+  youtube?: string;
+  artistName?: string;
+  albumCover?: string;
+  lyricsPreview?: string;
+  timesListed?: number;
+};
+
+export type SongRanking = {
+  year: number;
+  position: number;
+};
+
+export const API_ENDPOINTS = {
+  artists: '/api/artists',
+  songs: '/api/songs',
+  top2000: '/api/top2000',
+} as const;
+
+function getResponseMessage(url: string, status: number, body: string) {
+  const trimmedBody = body.trim();
+
+  if (trimmedBody.length > 0) {
+    return trimmedBody.slice(0, 180);
+  }
+
+  return `${url} returned ${status}.`;
+}
+
+async function fetchJson<T>(url: string): Promise<ApiResult<T>> {
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    const body = await response.text();
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        url,
+        status: response.status,
+        message: getResponseMessage(url, response.status, body),
+      };
+    }
+
+    if (body.trim().length === 0) {
+      return {
+        ok: false,
+        url,
+        status: response.status,
+        message: `${url} returned an empty response body.`,
+      };
+    }
+
+    try {
+      return {
+        ok: true,
+        url,
+        status: response.status,
+        data: JSON.parse(body) as T,
+      };
+    } catch {
+      return {
+        ok: false,
+        url,
+        status: response.status,
+        message: `${url} returned invalid JSON.`,
+      };
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      url,
+      message: error instanceof Error
+        ? `${url} failed before a usable response was returned: ${error.message}`
+        : `Request failed for ${url}.`,
+    };
+  }
+}
+
+function toDiagnostic<T>(result: ApiResult<T>): ApiEndpointDiagnostic {
+  return {
+    url: result.url,
+    ok: result.ok,
+    status: result.status,
+    detail: result.ok ? 'Response ontvangen.' : result.message,
+  };
+}
+
+function toArrayData<T>(result: ApiResult<T[]>, invalidShapeMessage: string): { data: T[]; diagnostic: ApiEndpointDiagnostic } {
+  if (!result.ok) {
+    return {
+      data: [],
+      diagnostic: toDiagnostic(result),
+    };
+  }
+
+  if (!Array.isArray(result.data)) {
+    return {
+      data: [],
+      diagnostic: {
+        url: result.url,
+        ok: false,
+        status: result.status,
+        detail: invalidShapeMessage,
+      },
+    };
+  }
+
+  return {
+    data: result.data,
+    diagnostic: toDiagnostic(result),
+  };
+}
+
+async function loadArrayEndpoint<T>(
+  loader: () => Promise<ApiResult<T[]>>,
+  invalidShapeMessage: string,
+): Promise<EndpointLoadResult<T>> {
+  const loadedAt = new Date().toISOString();
+  const result = await loader();
+  const endpoint = toArrayData(result, invalidShapeMessage);
+
+  return {
+    ok: endpoint.diagnostic.ok,
+    data: endpoint.data,
+    diagnostic: endpoint.diagnostic,
+    message: endpoint.diagnostic.ok ? undefined : endpoint.diagnostic.detail,
+    loadedAt,
+  };
+}
+
+function formatFailedEndpoints(diagnostics: AdminCatalogLoadResult['diagnostics']) {
+  return Object.values(diagnostics)
+    .filter((diagnostic) => !diagnostic.ok)
+    .map((diagnostic) => typeof diagnostic.status === 'number'
+      ? `${diagnostic.url} returned ${diagnostic.status}`
+      : `${diagnostic.url} failed before a response was received`)
+    .join(', ');
+}
+
+export function fetchArtists() {
+  return fetchJson<BackendArtist[]>(API_ENDPOINTS.artists);
+}
+
+export function fetchSongs() {
+  return fetchJson<BackendSong[]>(API_ENDPOINTS.songs);
+}
+
+export function fetchSongById(songId: number) {
+  return fetchJson<BackendSong>(`${API_ENDPOINTS.songs}/${songId}`);
+}
+
+export function fetchTop2000Years() {
+  return fetchJson<number[]>(API_ENDPOINTS.top2000);
+}
+
+export function loadArtistsCatalog() {
+  return loadArrayEndpoint(fetchArtists, `${API_ENDPOINTS.artists} returned an unexpected JSON shape.`);
+}
+
+export function loadSongsCatalog() {
+  return loadArrayEndpoint(fetchSongs, `${API_ENDPOINTS.songs} returned an unexpected JSON shape.`);
+}
+
+export async function loadAdminCatalog(): Promise<AdminCatalogLoadResult> {
+  const [artistsResult, songsResult] = await Promise.all([
+    fetchArtists(),
+    fetchSongs(),
+  ]);
+
+  const artists = toArrayData(artistsResult, `${API_ENDPOINTS.artists} returned an unexpected JSON shape.`);
+  const songs = toArrayData(songsResult, `${API_ENDPOINTS.songs} returned an unexpected JSON shape.`);
+  const diagnostics = {
+    artists: artists.diagnostic,
+    songs: songs.diagnostic,
+  };
+
+  if (artists.diagnostic.ok && songs.diagnostic.ok) {
+    return {
+      ok: true,
+      artists: artists.data,
+      songs: songs.data,
+      diagnostics,
+    };
+  }
+
+  return {
+    ok: false,
+    artists: artists.data,
+    songs: songs.data,
+    diagnostics,
+    message: `Backend returned an error: ${formatFailedEndpoints(diagnostics)}.`,
+  };
+}

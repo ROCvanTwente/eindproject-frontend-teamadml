@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Play, Trash2, Plus, Music } from 'lucide-react';
+import { Trash2, Plus, Music } from 'lucide-react';
 import { mockSongs } from '../data/mockData';
+import { PlayButton } from '../components/PlayButton';
 
 export function PlaylistDetailPage() {
   const { id } = useParams();
@@ -82,17 +83,12 @@ export function PlaylistDetailPage() {
                       <td className="px-4 py-3">{song.year}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 justify-end">
-                          {song.youtubeUrl && (
-                            <a
-                              href={song.youtubeUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                              title="Afspelen op YouTube"
-                            >
-                              <Play className="w-4 h-4" />
-                            </a>
-                          )}
+                          <PlayButton
+                            youtubeUrl={song.youtubeUrl}
+                            title={song.title}
+                            artist={song.artistName}
+                            variant="icon"
+                          />
                           <button
                             onClick={() => handleRemoveSong(song.id)}
                             className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"

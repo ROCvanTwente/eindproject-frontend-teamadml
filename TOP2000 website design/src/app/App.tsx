@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { NummerRedirectPage } from './pages/NummerRedirectPage';
 import { HomePage } from './pages/HomePage';
 import { ListPage } from './pages/ListPage';
 import { NewsPage } from './pages/NewsPage';
@@ -22,12 +22,8 @@ import { CreatePlaylistPage } from './pages/CreatePlaylistPage';
 import { PlaylistDetailPage } from './pages/PlaylistDetailPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
+import { AdminSongEditPage } from './pages/AdminSongEditPage';
 
-const BACKEND_ENDPOINTS = [
-  { label: 'GET /api/artists', url: '/api/artists' },
-  { label: 'GET /api/songs', url: '/api/songs' },
-  { label: 'GET /api/top2000', url: '/api/top2000' },
-];
 
 export default function App() {
   return (
@@ -44,6 +40,7 @@ export default function App() {
           <Route path="artiesten" element={<ArtistsPage />} />
           <Route path="artiest/:id" element={<ArtistDetailPage />} />
           <Route path="nummers" element={<SongsPage />} />
+          <Route path="nummers/:id" element={<NummerRedirectPage />} />
           <Route path="nummer/:id" element={<SongDetailPage />} />
           <Route path="nieuws" element={<NewsPage />} />
           <Route path="geschiedenis" element={<HistoryPage />} />
@@ -60,6 +57,7 @@ export default function App() {
           <Route path="admin" element={<AdminPanel />} />
           <Route path="admin/artiesten" element={<AdminPanel />} />
           <Route path="admin/nummers" element={<AdminPanel />} />
+          <Route path="admin/nummer/:id" element={<AdminSongEditPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
         </Route>

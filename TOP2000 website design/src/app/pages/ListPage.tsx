@@ -1,60 +1,63 @@
-import { useState } from 'react';
-import { Search, ChevronDown, Play, TrendingUp, TrendingDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Search, ChevronDown, Play, TrendingUp, TrendingDown, Loader2, AlertCircle } from 'lucide-react';
+import { loadSongsCatalog, type BackendSong } from '../data/api';
 
-// Mock data for the TOP2000 list
-const mockSongs = [
-  { position: 1, title: 'Bohemian Rhapsody', artist: 'Queen', year: 1975, previousPosition: 1, change: 0 },
-  { position: 2, title: 'Hotel California', artist: 'Eagles', year: 1977, previousPosition: 3, change: 1 },
-  { position: 3, title: 'Stairway to Heaven', artist: 'Led Zeppelin', year: 1971, previousPosition: 2, change: -1 },
-  { position: 4, title: 'Imagine', artist: 'John Lennon', year: 1971, previousPosition: 5, change: 1 },
-  { position: 5, title: 'Child in Time', artist: 'Deep Purple', year: 1970, previousPosition: 4, change: -1 },
-  { position: 6, title: 'November Rain', artist: "Guns N' Roses", year: 1992, previousPosition: 8, change: 2 },
-  { position: 7, title: 'Comfortably Numb', artist: 'Pink Floyd', year: 1979, previousPosition: 6, change: -1 },
-  { position: 8, title: 'Hey Jude', artist: 'The Beatles', year: 1968, previousPosition: 7, change: -1 },
-  { position: 9, title: 'Wish You Were Here', artist: 'Pink Floyd', year: 1975, previousPosition: 10, change: 1 },
-  { position: 10, title: 'Black', artist: 'Pearl Jam', year: 1991, previousPosition: 9, change: -1 },
-];
-
-// Generate more mock data
-const generateMoreSongs = () => {
-  const artists = ['The Rolling Stones', 'David Bowie', 'Bruce Springsteen', 'U2', 'Radiohead', 'Nirvana', 'Metallica', 'AC/DC', 'The Who', 'Fleetwood Mac'];
-  const titles = ['Yesterday', 'Let It Be', 'The Sound of Silence', 'Hallelujah', 'Fix You', 'Wonderwall', 'With or Without You', 'One', 'Smells Like Teen Spirit', 'Sweet Child O Mine'];
-
-  const moreSongs = [];
-  for (let i = 11; i <= 50; i++) {
-    moreSongs.push({
-      position: i,
-      title: titles[Math.floor(Math.random() * titles.length)],
-      artist: artists[Math.floor(Math.random() * artists.length)],
-      year: 1960 + Math.floor(Math.random() * 60),
-      previousPosition: i + (Math.random() > 0.5 ? 1 : -1),
-      change: Math.random() > 0.5 ? 1 : -1
-    });
-  }
-  return moreSongs;
-};
-
-const allSongs = [...mockSongs, ...generateMoreSongs()];
+type FetchState = 'idle' | 'loading' | 'success' | 'error';
 
 export function ListPage() {
   const [selectedYear, setSelectedYear] = useState('2024');
   const [searchTerm, setSearchTerm] = useState('');
   const [positionFilter, setPositionFilter] = useState('all');
   const [visibleCount, setVisibleCount] = useState(20);
+  const [songs, setSongs] = useState<BackendSong[]>([]);
+  const [fetchState, setFetchState] = useState<FetchState>('loading');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSongs = async () => {
+      setFetchState('loading');
+      setErrorMessage('');
+
+      const result = await loadSongsCatalog();
+
+      if (!isMounted) {
+        return;
+      }
+
+      setSongs(result.data);
+
+      if (!result.ok) {
+        setFetchState('error');
+        setErrorMessage(result.message ?? 'Nummers konden niet worden geladen.');
+        return;
+      }
+
+      setFetchState('success');
+    };
+
+    void loadSongs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const years = Array.from({ length: 26 }, (_, i) => (2024 - i).toString());
 
-  const filteredSongs = allSongs.filter(song => {
+  const filteredSongs = songs.filter(song => {
     const matchesSearch =
       song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      song.artist.toLowerCase().includes(searchTerm.toLowerCase());
+      (song.artistName ?? '').toLowerCase().includes(searchTerm.toLowerCase());
 
     if (!matchesSearch) return false;
 
     if (positionFilter === 'all') return true;
-    if (positionFilter === 'top10') return song.position <= 10;
-    if (positionFilter === 'top100') return song.position <= 100;
-    if (positionFilter === 'top500') return song.position <= 500;
+    if (positionFilter === 'top10') return (song.timesListed ?? 0) >= 15; // Top songs have more listings
+    if (positionFilter === 'top100') return (song.timesListed ?? 0) >= 5;
+    if (positionFilter === 'top500') return true;
 
     return true;
   });
@@ -72,6 +75,25 @@ export function ListPage() {
       </section>
 
       <div className="container mx-auto px-4 mt-8">
+        {fetchState === 'loading' && (
+          <div className="bg-card border border-border rounded-lg p-8 flex items-center justify-center gap-3 text-muted-foreground mb-8">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Nummers worden geladen...
+          </div>
+        )}
+
+        {fetchState === 'error' && (
+          <div className="bg-destructive/5 border border-destructive/30 rounded-lg p-6 mb-8">
+            <div className="flex items-center gap-3 text-destructive font-semibold mb-2">
+              <AlertCircle className="w-5 h-5" />
+              Backend data kon niet worden geladen
+            </div>
+            <p className="text-sm text-muted-foreground">{errorMessage}</p>
+          </div>
+        )}
+
+        {fetchState === 'success' && (
+          <>
         {/* Filters */}
         <div className="bg-card border border-border p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -134,48 +156,52 @@ export function ListPage() {
 
         {/* Songs List */}
         <div className="space-y-2">
-          {filteredSongs.slice(0, visibleCount).map((song, index) => (
-            <div
-              key={index}
-              className="bg-card border border-border p-4 hover:shadow-sm transition-all"
+          {filteredSongs.slice(0, visibleCount).map((song) => (
+            <Link
+              key={song.songId}
+              to={`/nummer/${song.songId}`}
+              className="block"
             >
-              <div className="flex items-center gap-4">
-                {/* Position */}
-                <div className="flex-shrink-0 w-12 text-center">
-                  <div className={`text-2xl font-bold ${song.position <= 10 ? 'text-primary' : ''}`}>
-                    {song.position}
+              <div
+                className="bg-card border border-border p-4 hover:shadow-sm hover:bg-secondary transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  {/* Position */}
+                  <div className="flex-shrink-0 w-12 text-center">
+                    <div className="text-xl font-bold text-muted-foreground group-hover:text-primary transition-colors">
+                      {song.songId}
+                    </div>
                   </div>
-                </div>
 
-                {/* Song Info */}
-                <div className="flex-grow min-w-0">
-                  <h3 className="font-semibold text-lg truncate">{song.title}</h3>
-                  <p className="text-muted-foreground">{song.artist} • {song.year}</p>
-                </div>
+                  {/* Song Info */}
+                  <div className="flex-grow min-w-0">
+                    <h3 className="font-semibold text-lg truncate group-hover:text-primary transition-colors">{song.title}</h3>
+                    <p className="text-muted-foreground text-sm">{song.artistName ?? `Artiest ${song.artistId}`} • {song.releaseYear}</p>
+                  </div>
 
-                {/* Change Indicator */}
-                <div className="hidden sm:flex items-center gap-2 text-sm">
-                  {song.change > 0 ? (
-                    <>
-                      <TrendingUp className="w-4 h-4 text-green-600" />
-                      <span className="text-green-600">+{song.change}</span>
-                    </>
-                  ) : song.change < 0 ? (
-                    <>
-                      <TrendingDown className="w-4 h-4 text-red-600" />
-                      <span className="text-red-600">{song.change}</span>
-                    </>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </div>
+                  {/* Times Listed */}
+                  <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                    {typeof song.timesListed === 'number' && (
+                      <>
+                        <span className="font-semibold">{song.timesListed}x</span>
+                        <span>genoteerd</span>
+                      </>
+                    )}
+                  </div>
 
-                {/* Play Button */}
-                <button className="flex-shrink-0 bg-primary text-primary-foreground p-3 rounded-full hover:bg-primary/90 transition-colors cursor-pointer">
-                  <Play className="w-4 h-4 fill-current" />
-                </button>
+                  {/* Play Button */}
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    className="flex-shrink-0 bg-primary text-primary-foreground p-3 rounded-full hover:bg-primary/90 transition-colors cursor-pointer"
+                  >
+                    <Play className="w-4 h-4 fill-current" />
+                  </button>
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -189,6 +215,8 @@ export function ListPage() {
               Laad meer nummers
             </button>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

@@ -1,0 +1,131 @@
+﻿import React, { useState, useRef, useEffect } from 'react';
+import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+
+interface AudioPlayerProps {
+  title: string;
+  artist: string;
+  audioUrl: string;
+}
+
+export function AudioPlayer({ title, artist, audioUrl }: AudioPlayerProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(err => {
+          console.log('Could not play audio:', err);
+        });
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const toggleMute = () => {
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+  };
+
+  const formatTime = (time: number) => {
+    if (!time || isNaN(time)) return '0:00';
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (audioRef.current) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const percent = (e.clientX - rect.left) / rect.width;
+      audioRef.current.currentTime = percent * duration;
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/20 rounded-lg p-6">
+      <audio
+        ref={audioRef}
+        src={audioUrl}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        crossOrigin="anonymous"
+      />
+
+      <div className="flex items-center gap-4">
+        {/* Play/Pause Button */}
+        <button
+          onClick={togglePlay}
+          className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors"
+        >
+          {isPlaying ? (
+            <Pause className="w-6 h-6 fill-current" />
+          ) : (
+            <Play className="w-6 h-6 fill-current ml-1" />
+          )}
+        </button>
+
+        {/* Song Info */}
+        <div className="flex-grow min-w-0">
+          <p className="font-bold text-foreground truncate">{title}</p>
+          <p className="text-sm text-muted-foreground truncate">{artist}</p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="flex-grow max-w-xs">
+          <div
+            className="h-1 bg-gray-300 rounded-full cursor-pointer hover:h-2 transition-all"
+            onClick={handleProgressClick}
+          >
+            <div
+              className="h-full bg-primary rounded-full"
+              style={{ width: `${(currentTime / duration) * 100 || 0}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
+          </div>
+        </div>
+
+        {/* Mute Button */}
+        <button
+          onClick={toggleMute}
+          className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors"
+        >
+          {isMuted ? (
+            <VolumeX className="w-5 h-5" />
+          ) : (
+            <Volume2 className="w-5 h-5" />
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,171 @@
+﻿import { Link } from 'react-router-dom';
+import { Music, Trophy, TrendingUp, Calendar } from 'lucide-react';
+import { mockSongs, mockRankings, getArtistById } from '../data/mockData';
+
+export function Top2000Page() {
+  // Get current year (2024)
+  const currentYear = 2024;
+
+  // Get all rankings for current year and sort by position
+  const currentYearRankings = mockRankings
+    .filter(ranking => ranking.year === currentYear)
+    .sort((a, b) => a.position - b.position)
+    .slice(0, 10); // Top 10
+
+  // Get song details for current rankings
+  const topSongs = currentYearRankings.map(ranking => ({
+    ...mockSongs.find(song => song.id === ranking.songId),
+    position: ranking.position,
+  }));
+
+  // Statistics
+  const totalSongs = mockSongs.length;
+  const totalYears = new Set(mockRankings.map(r => r.year)).size;
+  const averagePosition = (
+    mockRankings.reduce((sum, r) => sum + r.position, 0) / mockRankings.length
+  ).toFixed(1);
+
+  return (
+    <div className="pb-12">
+      {/* Hero Section */}
+      <section className="bg-gradient-to-r from-primary via-accent to-secondary text-white py-16 border-b border-border">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl md:text-6xl font-bold mb-4">TOP 2000</h1>
+            <p className="text-xl md:text-2xl opacity-90 mb-4">
+              De ultieme muziekuitzendin
+            </p>
+            <p className="text-lg opacity-80">
+              Jaarlijks stellen luisteraars van NPO Radio 2 hun favoriete nummers samen
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div className="container mx-auto px-4 mt-12">
+        <div className="max-w-6xl mx-auto space-y-12">
+          {/* Stats Grid */}
+          <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-card border border-border rounded-lg p-6 shadow-md text-center">
+              <Trophy className="w-12 h-12 text-primary mx-auto mb-4" />
+              <h3 className="text-3xl font-bold mb-2">{totalSongs}</h3>
+              <p className="text-muted-foreground">Nummers in database</p>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-6 shadow-md text-center">
+              <Calendar className="w-12 h-12 text-accent mx-auto mb-4" />
+              <h3 className="text-3xl font-bold mb-2">{totalYears}</h3>
+              <p className="text-muted-foreground">Jaren gegevens</p>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-6 shadow-md text-center">
+              <TrendingUp className="w-12 h-12 text-secondary mx-auto mb-4" />
+              <h3 className="text-3xl font-bold mb-2">{averagePosition}</h3>
+              <p className="text-muted-foreground">Gemiddelde positie</p>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-6 shadow-md text-center">
+              <Music className="w-12 h-12 text-orange-500 mx-auto mb-4" />
+              <h3 className="text-3xl font-bold mb-2">{currentYear}</h3>
+              <p className="text-muted-foreground">Huiige TOP 2000</p>
+            </div>
+          </section>
+
+          {/* Current Top 10 */}
+          <section>
+            <h2 className="text-3xl font-bold mb-8">TOP 10 van {currentYear}</h2>
+
+            <div className="space-y-3">
+              {topSongs.map((song, index) => (
+                <Link
+                  key={song?.id}
+                  to={`/nummer/${song?.id}`}
+                  className="block bg-card border border-border rounded-lg p-6 hover:shadow-lg hover:border-primary/30 transition-all group"
+                >
+                  <div className="flex items-center gap-6">
+                    {/* Position Badge */}
+                    <div className="flex-shrink-0">
+                      <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl ${
+                        index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white' :
+                        index === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-500 text-white' :
+                        index === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-600 text-white' :
+                        'bg-primary text-white'
+                      }`}>
+                        #{song?.position}
+                      </div>
+                    </div>
+
+                    {/* Song Cover */}
+                    {song?.albumCover && (
+                      <img
+                        src={song.albumCover}
+                        alt={song.title}
+                        className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                      />
+                    )}
+
+                    {/* Song Info */}
+                    <div className="flex-grow min-w-0">
+                      <h3 className="text-xl font-bold group-hover:text-primary transition-colors truncate">
+                        {song?.title}
+                      </h3>
+                      <Link
+                        to={`/artiest/${song?.artistId}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        {song?.artistName}
+                      </Link>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Origineel uit {song?.year} • {song?.timesListed} keer genoteerd
+                      </p>
+                    </div>
+
+                    {/* View Icon */}
+                    <div className="flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* Info Section */}
+          <section className="bg-secondary rounded-lg p-8 border border-border">
+            <h2 className="text-2xl font-bold mb-4">Over de TOP 2000</h2>
+            <div className="space-y-4 text-muted-foreground">
+              <p>
+                De TOP 2000 is een jaarlijks terugkerend radioprogramma van NPO Radio 2 dat plaatsvindt tussen Kerstmis en Nieuwjaarsdag. Het programma bestaat uit een countdown van de 2000 beste nummers aller tijden, samengesteld uit stemmen van luisteraars.
+              </p>
+              <p>
+                Elk jaar stemmen honderdduizenden luisteraars op hun favoriete nummers. De voorkeur voor bepaalde nummers is opmerkelijk consistent, met klassiekers als "Bohemian Rhapsody" van Queen die jaar na jaar de top aanvoert.
+              </p>
+            </div>
+          </section>
+
+          {/* Call to Action */}
+          <section className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-8 border-2 border-primary/20 text-center">
+            <h3 className="text-2xl font-bold mb-4">Verken de volledige TOP 2000</h3>
+            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+              Bekijk alle nummers die in de TOP 2000 hebben gestaan, volg hun positie door de jaren heen en ontdek de geschiedenis van deze iconische radiouitzending.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link
+                to="/nummers"
+                className="px-8 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-semibold"
+              >
+                Bekijk alle nummers
+              </Link>
+              <Link
+                to="/artiesten"
+                className="px-8 py-3 bg-card border border-border rounded-lg hover:bg-muted transition-colors font-semibold"
+              >
+                Bekijk alle artiesten
+              </Link>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
