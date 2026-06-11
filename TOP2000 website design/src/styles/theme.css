@@ -178,4 +178,14 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+
+  select option {
+    background-color: #4b0810;
+    color: #FFF5F5;
+  }
+
+  .dark select option {
+    background-color: #1e1e1e;
+    color: #F5F5F5;
+  }
 }

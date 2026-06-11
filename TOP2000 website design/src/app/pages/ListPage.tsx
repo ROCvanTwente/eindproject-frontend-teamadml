@@ -1,50 +1,127 @@
-import { useState } from 'react';
-import { Search, ChevronDown, Play, TrendingUp, TrendingDown } from 'lucide-react';
-
-// Mock data for the TOP2000 list
-const mockSongs = [
-  { position: 1, title: 'Bohemian Rhapsody', artist: 'Queen', year: 1975, previousPosition: 1, change: 0 },
-  { position: 2, title: 'Hotel California', artist: 'Eagles', year: 1977, previousPosition: 3, change: 1 },
-  { position: 3, title: 'Stairway to Heaven', artist: 'Led Zeppelin', year: 1971, previousPosition: 2, change: -1 },
-  { position: 4, title: 'Imagine', artist: 'John Lennon', year: 1971, previousPosition: 5, change: 1 },
-  { position: 5, title: 'Child in Time', artist: 'Deep Purple', year: 1970, previousPosition: 4, change: -1 },
-  { position: 6, title: 'November Rain', artist: "Guns N' Roses", year: 1992, previousPosition: 8, change: 2 },
-  { position: 7, title: 'Comfortably Numb', artist: 'Pink Floyd', year: 1979, previousPosition: 6, change: -1 },
-  { position: 8, title: 'Hey Jude', artist: 'The Beatles', year: 1968, previousPosition: 7, change: -1 },
-  { position: 9, title: 'Wish You Were Here', artist: 'Pink Floyd', year: 1975, previousPosition: 10, change: 1 },
-  { position: 10, title: 'Black', artist: 'Pearl Jam', year: 1991, previousPosition: 9, change: -1 },
-];
-
-// Generate more mock data
-const generateMoreSongs = () => {
-  const artists = ['The Rolling Stones', 'David Bowie', 'Bruce Springsteen', 'U2', 'Radiohead', 'Nirvana', 'Metallica', 'AC/DC', 'The Who', 'Fleetwood Mac'];
-  const titles = ['Yesterday', 'Let It Be', 'The Sound of Silence', 'Hallelujah', 'Fix You', 'Wonderwall', 'With or Without You', 'One', 'Smells Like Teen Spirit', 'Sweet Child O Mine'];
-
-  const moreSongs = [];
-  for (let i = 11; i <= 50; i++) {
-    moreSongs.push({
-      position: i,
-      title: titles[Math.floor(Math.random() * titles.length)],
-      artist: artists[Math.floor(Math.random() * artists.length)],
-      year: 1960 + Math.floor(Math.random() * 60),
-      previousPosition: i + (Math.random() > 0.5 ? 1 : -1),
-      change: Math.random() > 0.5 ? 1 : -1
-    });
-  }
-  return moreSongs;
-};
-
-const allSongs = [...mockSongs, ...generateMoreSongs()];
+import { useState, useEffect } from 'react';
+import { Search, ChevronDown, Play, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
+import { fetchTop2000Years, loadTop2000ByYear, type BackendTop2000Entry } from '../data/api';
 
 export function ListPage() {
-  const [selectedYear, setSelectedYear] = useState('2024');
+  const [selectedYear, setSelectedYear] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [positionFilter, setPositionFilter] = useState('all');
   const [visibleCount, setVisibleCount] = useState(20);
 
-  const years = Array.from({ length: 26 }, (_, i) => (2024 - i).toString());
+  const [years, setYears] = useState<string[]>([]);
+  const [entries, setEntries] = useState<BackendTop2000Entry[]>([]);
+  const [previousEntriesMap, setPreviousEntriesMap] = useState<Map<number, number>>(new Map());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [fallbackNotice, setFallbackNotice] = useState('');
 
-  const filteredSongs = allSongs.filter(song => {
+  // Fetch available years from database
+  useEffect(() => {
+    let isMounted = true;
+    const loadYears = async () => {
+      try {
+        const result = await fetchTop2000Years();
+        if (result.ok && result.data && result.data.length > 0) {
+          const sortedYears = [...result.data].sort((a, b) => b - a).map(y => y.toString());
+          const displayYears: string[] = [];
+          if (!sortedYears.includes("2026")) displayYears.push("2026");
+          if (!sortedYears.includes("2025")) displayYears.push("2025");
+          displayYears.push(...sortedYears);
+
+          if (isMounted) {
+            setYears(displayYears);
+            setSelectedYear("2026"); // Default to current year 2026
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load years:', err);
+      }
+    };
+    void loadYears();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Fetch entries for the selected year and the previous year
+  useEffect(() => {
+    if (!selectedYear) return;
+    let isMounted = true;
+    const loadEntries = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const yearInt = parseInt(selectedYear, 10);
+        
+        // Find latest year in DB
+        const yearsResult = await fetchTop2000Years();
+        let dbLatestYear = 2024;
+        if (yearsResult.ok && yearsResult.data && yearsResult.data.length > 0) {
+          dbLatestYear = Math.max(...yearsResult.data);
+        }
+
+        let queryYear = yearInt;
+        let showNotice = '';
+
+        if (yearInt > dbLatestYear) {
+          queryYear = dbLatestYear;
+          showNotice = `Editie ${selectedYear} is nog niet gestart. We tonen de meest recente lijst van ${dbLatestYear}.`;
+        }
+
+        const [currentRes, prevRes] = await Promise.all([
+          loadTop2000ByYear(queryYear),
+          loadTop2000ByYear(queryYear - 1)
+        ]);
+
+        if (!currentRes.ok) {
+          throw new Error(currentRes.message || 'Kon de Top 2000 lijst niet ophalen.');
+        }
+
+        const prevMap = new Map<number, number>();
+        if (prevRes.ok && prevRes.data) {
+          prevRes.data.forEach(entry => {
+            prevMap.set(entry.songId, entry.position);
+          });
+        }
+
+        if (isMounted) {
+          setEntries(currentRes.data);
+          setPreviousEntriesMap(prevMap);
+          setFallbackNotice(showNotice);
+          setLoading(false);
+          setVisibleCount(20); // Reset scroll position pagination count
+        }
+      } catch (err: any) {
+        console.error('Failed to load entries:', err);
+        if (isMounted) {
+          setError(err.message || 'Fout bij het laden van data uit de database.');
+          setLoading(false);
+        }
+      }
+    };
+    void loadEntries();
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedYear]);
+
+  // Compute filtered list and shifts
+  const filteredSongs = entries.map(entry => {
+    const prevPos = previousEntriesMap.get(entry.songId);
+    let change: number | 'new' | 0 = 0;
+    if (prevPos === undefined) {
+      change = 'new';
+    } else {
+      change = prevPos - entry.position;
+    }
+    return {
+      position: entry.position,
+      title: entry.song.title,
+      artist: entry.song.artistName || entry.song.artist?.name || 'Onbekende artiest',
+      year: entry.song.releaseYear || 0,
+      change
+    };
+  }).filter(song => {
     const matchesSearch =
       song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       song.artist.toLowerCase().includes(searchTerm.toLowerCase());
@@ -82,7 +159,8 @@ export function ListPage() {
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full px-4 py-2 border border-border rounded-lg appearance-none bg-input-background focus:outline-none focus:ring-2 focus:ring-primary pr-10"
+                  disabled={years.length === 0}
+                  className="w-full px-4 py-2 border border-border rounded-lg appearance-none bg-input-background focus:outline-none focus:ring-2 focus:ring-primary pr-10 disabled:opacity-55"
                 >
                   {years.map(year => (
                     <option key={year} value={year}>{year}</option>
@@ -127,67 +205,110 @@ export function ListPage() {
           </div>
         </div>
 
+        {/* Fallback year warning banner */}
+        {fallbackNotice && !loading && (
+          <div className="bg-primary/10 border border-primary/25 text-foreground px-4 py-3 rounded-lg mb-6 flex items-center gap-3 animate-fade-in">
+            <AlertCircle className="w-5 h-5 text-primary flex-shrink-0" />
+            <span className="text-sm font-medium">{fallbackNotice}</span>
+          </div>
+        )}
+
         {/* Results Summary */}
         <div className="mb-4 text-muted-foreground">
-          {filteredSongs.length} {filteredSongs.length === 1 ? 'nummer' : 'nummers'} gevonden
+          {loading ? 'Laden...' : `${filteredSongs.length} ${filteredSongs.length === 1 ? 'nummer' : 'nummers'} gevonden`}
         </div>
 
-        {/* Songs List */}
-        <div className="space-y-2">
-          {filteredSongs.slice(0, visibleCount).map((song, index) => (
-            <div
-              key={index}
-              className="bg-card border border-border p-4 hover:shadow-sm transition-all"
-            >
-              <div className="flex items-center gap-4">
-                {/* Position */}
-                <div className="flex-shrink-0 w-12 text-center">
-                  <div className={`text-2xl font-bold ${song.position <= 10 ? 'text-primary' : ''}`}>
-                    {song.position}
+        {/* Loading / Error States */}
+        {loading ? (
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+              <div
+                key={i}
+                className="bg-card border border-border p-4 animate-pulse flex items-center gap-4"
+              >
+                <div className="w-12 h-8 bg-zinc-800 rounded"></div>
+                <div className="flex-grow space-y-2">
+                  <div className="h-6 bg-zinc-800 rounded w-1/3"></div>
+                  <div className="h-4 bg-zinc-800 rounded w-1/4"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="bg-destructive/5 border border-destructive/30 rounded-lg p-6 mb-8 text-center">
+            <AlertCircle className="w-10 h-10 text-destructive mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-destructive mb-1">Muzieklijst kon niet worden geladen</h3>
+            <p className="text-muted-foreground text-sm">{error}</p>
+          </div>
+        ) : (
+          /* Songs List */
+          <div className="space-y-2">
+            {filteredSongs.slice(0, visibleCount).map((song, index) => (
+              <div
+                key={index}
+                className="bg-card border border-border p-4 hover:shadow-sm transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  {/* Position */}
+                  <div className="flex-shrink-0 w-12 text-center">
+                    <div className={`text-2xl font-bold ${song.position <= 10 ? 'text-primary' : ''}`}>
+                      {song.position}
+                    </div>
                   </div>
-                </div>
 
-                {/* Song Info */}
-                <div className="flex-grow min-w-0">
-                  <h3 className="font-semibold text-lg truncate">{song.title}</h3>
-                  <p className="text-muted-foreground">{song.artist} • {song.year}</p>
-                </div>
+                  {/* Song Info */}
+                  <div className="flex-grow min-w-0">
+                    <h3 className="font-semibold text-lg truncate">{song.title}</h3>
+                    <p className="text-muted-foreground">{song.artist} {song.year > 0 && `• ${song.year}`}</p>
+                  </div>
 
-                {/* Change Indicator */}
-                <div className="hidden sm:flex items-center gap-2 text-sm">
-                  {song.change > 0 ? (
-                    <>
-                      <TrendingUp className="w-4 h-4 text-green-600" />
-                      <span className="text-green-600">+{song.change}</span>
-                    </>
-                  ) : song.change < 0 ? (
-                    <>
-                      <TrendingDown className="w-4 h-4 text-red-600" />
-                      <span className="text-red-600">{song.change}</span>
-                    </>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </div>
+                  {/* Change Indicator */}
+                  <div className="hidden sm:flex items-center gap-2 text-sm">
+                    {song.change === 'new' ? (
+                      <span className="text-primary font-semibold text-xs bg-primary/10 px-2 py-0.5 border border-primary/20 rounded">
+                        Nieuw
+                      </span>
+                    ) : typeof song.change === 'number' && song.change > 0 ? (
+                      <>
+                        <TrendingUp className="w-4 h-4 text-green-600" />
+                        <span className="text-green-600">+{song.change}</span>
+                      </>
+                    ) : typeof song.change === 'number' && song.change < 0 ? (
+                      <>
+                        <TrendingDown className="w-4 h-4 text-red-600" />
+                        <span className="text-red-600">{song.change}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
 
-                {/* Play Button */}
-                <button className="flex-shrink-0 bg-primary text-primary-foreground p-3 rounded-full hover:bg-primary/90 transition-colors cursor-pointer">
-                  <Play className="w-4 h-4 fill-current" />
+                  {/* Play Button */}
+                  <button className="flex-shrink-0 bg-primary text-primary-foreground p-3 rounded-full hover:bg-primary/90 transition-colors cursor-pointer">
+                    <Play className="w-4 h-4 fill-current" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Load More */}
+            {visibleCount < filteredSongs.length && (
+              <div className="text-center mt-8">
+                <button
+                  onClick={() => setVisibleCount(prev => prev + 20)}
+                  className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  Laad meer nummers
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
+            )}
 
-        {/* Load More */}
-        {visibleCount < filteredSongs.length && (
-          <div className="text-center mt-8">
-            <button
-              onClick={() => setVisibleCount(prev => prev + 20)}
-              className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Laad meer nummers
-            </button>
+            {filteredSongs.length === 0 && (
+              <div className="text-center py-16">
+                <h3 className="text-xl font-semibold mb-2">Geen nummers gevonden</h3>
+                <p className="text-muted-foreground">Probeer een andere filter of zoekterm</p>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -7,7 +7,6 @@ export function LoginPage() {
     password: ''
   });
   
-  // Nieuwe state voor het tonen van foutmeldingen
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -15,7 +14,7 @@ export function LoginPage() {
     setErrorMessage('');
 
     try {
-        const response = await fetch('http://localhost:5229/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,6 +61,7 @@ export function LoginPage() {
           <div className="bg-card border border-border rounded-lg p-8 shadow-md">
             
             {/* Foutmelding tonen als het inloggen mislukt */}
+            {/* Display error message */}
             {errorMessage && (
               <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
                 {errorMessage}

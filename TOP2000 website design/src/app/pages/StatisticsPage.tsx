@@ -20,7 +20,7 @@ export function StatisticsPage() {
   const [allEditionsData, setAllEditionsData] = useState<InAlleEditiesDto[]>([]);
   const [verdwenenData, setVerdwenenData] = useState<VerdwenenNummerDto[]>([]);
   const [topArtiestenData, setTopArtiestenData] = useState<TopArtiestDto[]>([]);
-  
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,37 +31,37 @@ export function StatisticsPage() {
     setError(null);
 
     if (selectedStat === 'stijgers') {
-      fetch(`http://localhost:5174/api/top2000/statistics/stijgers/${selectedYear}`)
+      fetch(`/api/top2000/statistics/stijgers/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Geen stijgers gevonden'); return res.json(); })
         .then(data => { setStijgersData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setStijgersData([]); setIsLoading(false); });
-    } 
+    }
     else if (selectedStat === 'dalers') {
-      fetch(`http://localhost:5174/api/top2000/statistics/dalers/${selectedYear}`)
+      fetch(`/api/top2000/statistics/dalers/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Geen dalers gevonden'); return res.json(); })
         .then(data => { setDalersData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setDalersData([]); setIsLoading(false); });
     }
     else if (selectedStat === 'newcomers') {
-      fetch(`http://localhost:5174/api/top2000/statistics/nieuwkomers/${selectedYear}`)
+      fetch(`/api/top2000/statistics/nieuwkomers/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Geen nieuwkomers gevonden'); return res.json(); })
         .then(data => { setNieuwkomersData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setNieuwkomersData([]); setIsLoading(false); });
     }
     else if (selectedStat === 'all-editions') {
-      fetch(`http://localhost:5174/api/top2000/statistics/in-alle-edities/${selectedYear}`)
+      fetch(`/api/top2000/statistics/in-alle-edities/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Data ophalen mislukt'); return res.json(); })
         .then(data => { setAllEditionsData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setAllEditionsData([]); setIsLoading(false); });
     }
     else if (selectedStat === 'disappeared') {
-      fetch(`http://localhost:5174/api/top2000/statistics/verdwenen-nummers/${selectedYear}`)
+      fetch(`/api/top2000/statistics/verdwenen-nummers/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Geen verdwenen nummers gevonden'); return res.json(); })
         .then(data => { setVerdwenenData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setVerdwenenData([]); setIsLoading(false); });
     }
     else if (selectedStat === 'top-artists') {
-      fetch(`http://localhost:5174/api/top2000/statistics/top-artiesten/${selectedYear}`)
+      fetch(`/api/top2000/statistics/top-artiesten/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Geen top artiesten gevonden'); return res.json(); })
         .then(data => { setTopArtiestenData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setTopArtiestenData([]); setIsLoading(false); });
@@ -125,7 +125,7 @@ export function StatisticsPage() {
         </div>
 
         <div className="bg-card border border-border rounded-lg shadow-md overflow-hidden">
-          
+
           {selectedStat === 'stijgers' && (
             <div className="p-6">
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">

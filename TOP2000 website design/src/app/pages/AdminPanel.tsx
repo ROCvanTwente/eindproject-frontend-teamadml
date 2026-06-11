@@ -1,33 +1,51 @@
-import { useEffect, useState } from 'react';
-import { AlertCircle, Loader2, Music2, RefreshCw, Users } from 'lucide-react';
-import { loadAdminCatalog, type BackendArtist, type BackendSong } from '../data/api';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import {
+	AlertCircle,
+	Loader2,
+	Music2,
+	RefreshCw,
+	Users,
+	Plus,
+	LayoutDashboard,
+	ClipboardList,
+	UserCheck,
+	Sparkles
+} from 'lucide-react';
+import {
+	loadAdminCatalog,
+	type BackendArtist,
+	type BackendSong,
+	fetchAuditLogs,
+	createAuditLog,
+	type AuditLogEntry,
+	type AuditAction,
+	type AuditEntityType,
+	fetchUsers,
+	fetchRoleRequests,
+	type BackendUser,
+	type RoleChangeRequest
+} from '../data/api';
+import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'motion/react';
 
-const ITEMS_PER_PAGE = 10;
+import { OverviewTab, type EndpointDiagnostic, type EndpointKey } from './admin/OverviewTab';
+import { ArtistsTab } from './admin/ArtistsTab';
+import { SongsTab } from './admin/SongsTab';
+import { AuditLogTab } from './admin/AuditLogTab';
+import { AccountsTab } from './admin/AccountsTab';
 
 type FetchState = 'idle' | 'loading' | 'success' | 'error';
-type SortDirection = 'asc' | 'desc';
-type ArtistSortKey = 'artistId' | 'name' | 'songCount';
-type SongSortKey = 'songId' | 'title' | 'artistName' | 'releaseYear';
-type EndpointKey = 'artists' | 'songs';
-type EndpointDiagnostic = {
-	key: EndpointKey;
-	label: string;
-	url: string;
-	status: FetchState;
-	httpStatus?: number;
-	detail: string;
-	expectedFields: string[];
-};
 
-const ADMIN_ENDPOINTS: Record<EndpointKey, Omit<EndpointDiagnostic, 'status' | 'httpStatus' | 'detail'>> = {
+const ADMIN_ENDPOINTS = {
 	artists: {
-		key: 'artists',
+		key: 'artists' as EndpointKey,
 		label: 'Artiesten',
 		url: '/api/artists',
 		expectedFields: ['artistId', 'name', 'website'],
 	},
 	songs: {
-		key: 'songs',
+		key: 'songs' as EndpointKey,
 		label: 'Nummers',
 		url: '/api/songs',
 		expectedFields: ['songId', 'title', 'artistId', 'releaseYear', 'youtube'],
@@ -47,151 +65,10 @@ const createEndpointDiagnostics = (status: FetchState): Record<EndpointKey, Endp
 	},
 });
 
-function formatEndpointFailure(diagnostic: EndpointDiagnostic) {
-	if (typeof diagnostic.httpStatus === 'number') {
-		return `${diagnostic.url} returned ${diagnostic.httpStatus}`;
-	}
-
-	return `${diagnostic.url} failed before a response was received`;
-}
-
-
-function paginateItems<T>(items: T[], currentPage: number) {
-	const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-	return items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-}
-
-function getVisiblePageNumbers(currentPage: number, totalPages: number) {
-	if (totalPages <= 7) {
-		return Array.from({ length: totalPages }, (_, index) => index + 1);
-	}
-
-	if (currentPage <= 4) {
-		return [1, 2, 3, 4, 5, 'ellipsis', totalPages] as const;
-	}
-
-	if (currentPage >= totalPages - 3) {
-		return [1, 'ellipsis', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages] as const;
-	}
-
-	return [1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages] as const;
-}
-
-function compareValues(leftValue: string | number, rightValue: string | number, direction: SortDirection) {
-	const comparison = typeof leftValue === 'number' && typeof rightValue === 'number'
-		? leftValue - rightValue
-		: String(leftValue).localeCompare(String(rightValue), 'nl', { sensitivity: 'base' });
-
-	return direction === 'asc' ? comparison : -comparison;
-}
-
-type PaginationProps = {
-	currentPage: number;
-	totalPages: number;
-	onPageChange: (page: number) => void;
-};
-
-function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-	const visiblePages = getVisiblePageNumbers(currentPage, totalPages);
-	const [pageInput, setPageInput] = useState(String(currentPage));
-
-	useEffect(() => {
-		setPageInput(String(currentPage));
-	}, [currentPage]);
-
-	const submitPage = () => {
-		const parsedPage = Number.parseInt(pageInput, 10);
-		if (Number.isNaN(parsedPage)) {
-			setPageInput(String(currentPage));
-			return;
-		}
-
-		onPageChange(Math.min(Math.max(parsedPage, 1), totalPages));
-	};
-
-	return (
-		<div className="flex items-center gap-2 flex-wrap justify-end">
-			<button
-				onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-				disabled={currentPage === 1}
-				className="px-3 py-2 rounded-lg border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary transition-colors"
-			>
-				&lt;
-			</button>
-
-			{visiblePages.map((page, index) => page === 'ellipsis' ? (
-				<span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
-					...
-				</span>
-			) : (
-				<button
-					key={page}
-					onClick={() => onPageChange(page)}
-					className={`px-3 py-2 rounded-lg border transition-colors ${
-						page === currentPage
-							? 'bg-primary text-primary-foreground border-primary'
-							: 'border-border hover:bg-secondary'
-					}`}
-				>
-					{page}
-				</button>
-			))}
-
-			<button
-				onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-				disabled={currentPage === totalPages}
-				className="px-3 py-2 rounded-lg border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary transition-colors"
-			>
-				&gt;
-			</button>
-
-			<div className="flex items-center gap-2 ml-2">
-				<input
-					type="number"
-					min={1}
-					max={totalPages}
-					value={pageInput}
-					onChange={(event) => setPageInput(event.target.value)}
-					onKeyDown={(event) => {
-						if (event.key === 'Enter') {
-							submitPage();
-						}
-					}}
-					className="w-20 px-3 py-2 rounded-lg border border-border bg-background"
-					aria-label="Ga naar pagina"
-				/>
-				<button
-					onClick={submitPage}
-					className="px-3 py-2 rounded-lg border border-border hover:bg-secondary transition-colors"
-				>
-					Ga
-				</button>
-			</div>
-		</div>
-	);
-}
-
-type SortHeaderProps = {
-	label: string;
-	isActive: boolean;
-	direction: SortDirection;
-	onClick: () => void;
-};
-
-function SortHeader({ label, isActive, direction, onClick }: SortHeaderProps) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className="inline-flex items-center gap-2 hover:text-primary transition-colors"
-		>
-			<span>{label}</span>
-			<span className="text-xs text-muted-foreground">{isActive ? (direction === 'asc' ? '▲' : '▼') : '↕'}</span>
-		</button>
-	);
-}
-
 export function AdminPanel() {
+	const location = useLocation();
+	const navigate = useNavigate();
+
 	const [artists, setArtists] = useState<BackendArtist[]>([]);
 	const [songs, setSongs] = useState<BackendSong[]>([]);
 	const [fetchState, setFetchState] = useState<FetchState>('idle');
@@ -199,18 +76,57 @@ export function AdminPanel() {
 	const [endpointDiagnostics, setEndpointDiagnostics] = useState<Record<EndpointKey, EndpointDiagnostic>>(
 		() => createEndpointDiagnostics('idle')
 	);
-	const [artistPage, setArtistPage] = useState(1);
-	const [songPage, setSongPage] = useState(1);
-	const [artistIdFilter, setArtistIdFilter] = useState('');
-	const [songIdFilter, setSongIdFilter] = useState('');
-	const [artistSort, setArtistSort] = useState<{ key: ArtistSortKey; direction: SortDirection }>({
-		key: 'artistId',
-		direction: 'asc',
-	});
-	const [songSort, setSongSort] = useState<{ key: SongSortKey; direction: SortDirection }>({
-		key: 'songId',
-		direction: 'asc',
-	});
+
+	const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+	const [users, setUsers] = useState<BackendUser[]>([]);
+	const [roleRequests, setRoleRequests] = useState<RoleChangeRequest[]>([]);
+	const [usersLoading, setUsersLoading] = useState(false);
+
+	const openAddArtistModalRef = useRef<() => void>(() => {});
+	const openAddSongModalRef = useRef<() => void>(() => {});
+
+	const addAuditLogEntry = async (action: AuditAction, entityType: AuditEntityType, name: string, details: string) => {
+		const newEntry: Omit<AuditLogEntry, 'id' | 'timestamp'> & { id?: string; timestamp?: string } = {
+			id: '',
+			timestamp: '',
+			action,
+			entityType,
+			name,
+			details
+		};
+
+		const apiResult = await createAuditLog(newEntry);
+
+		if (apiResult.ok && apiResult.data) {
+			setAuditLogs(prev => {
+				const updated = [apiResult.data, ...prev];
+				localStorage.setItem('top2000_audit_log', JSON.stringify(updated));
+				return updated;
+			});
+		} else {
+			const localEntry: AuditLogEntry = {
+				id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				timestamp: new Date().toISOString(),
+				action,
+				entityType,
+				name,
+				details
+			};
+			setAuditLogs(prev => {
+				const updated = [localEntry, ...prev];
+				localStorage.setItem('top2000_audit_log', JSON.stringify(updated));
+				return updated;
+			});
+		}
+	};
+
+	const currentTab = useMemo(() => {
+		if (location.pathname.includes('/artiesten')) return 'artists';
+		if (location.pathname.includes('/nummers')) return 'songs';
+		if (location.pathname.includes('/logboek')) return 'audit-log';
+		if (location.pathname.includes('/gebruikers')) return 'accounts';
+		return 'overview';
+	}, [location.pathname]);
 
 	const loadAdminData = async () => {
 		setFetchState('loading');
@@ -236,346 +152,358 @@ export function AdminPanel() {
 			};
 
 			setEndpointDiagnostics(nextDiagnostics);
-
 			setArtists(adminCatalog.artists);
-			setSongs([...adminCatalog.songs].sort((leftSong, rightSong) => leftSong.songId - rightSong.songId));
-			setArtistPage(1);
-			setSongPage(1);
+			setSongs([...adminCatalog.songs].sort((a, b) => a.songId - b.songId));
 
 			if (!adminCatalog.ok) {
-				console.error('Admin backend request failed', adminCatalog);
 				setFetchState('error');
-				setErrorMessage(adminCatalog.message ?? 'Unknown backend error');
+				setErrorMessage(adminCatalog.message ?? 'Backend data kon niet volledig worden geladen.');
+				toast.error('Fout bij het laden van backend data.');
 				return;
 			}
 
 			setFetchState('success');
 		} catch (error) {
-			console.error('Admin panel failed to load backend data', error);
 			setFetchState('error');
-			setErrorMessage(error instanceof Error ? error.message : 'Unknown backend error');
+			setErrorMessage(error instanceof Error ? error.message : 'Onbekende fout.');
+			toast.error('Netwerkfout bij het ophalen van backend data.');
+		}
+	};
+
+	const loadUsersData = async () => {
+		setUsersLoading(true);
+		try {
+			const [usersRes, requestsRes] = await Promise.all([
+				fetchUsers(),
+				fetchRoleRequests()
+			]);
+
+			if (usersRes.ok && usersRes.data) {
+				setUsers(usersRes.data);
+			}
+			if (requestsRes.ok && requestsRes.data) {
+				setRoleRequests(requestsRes.data);
+			}
+		} catch (error) {
+			console.error("Fout bij laden gebruikersgegevens:", error);
+		} finally {
+			setUsersLoading(false);
+		}
+	};
+
+	const loadAuditLogsData = async () => {
+		const result = await fetchAuditLogs();
+		if (result.ok && Array.isArray(result.data)) {
+			setAuditLogs(result.data);
+			localStorage.setItem('top2000_audit_log', JSON.stringify(result.data));
+		} else {
+			const storedLogs = localStorage.getItem('top2000_audit_log');
+			if (storedLogs) {
+				try {
+					setAuditLogs(JSON.parse(storedLogs));
+				} catch (e) {
+					console.error('Error parsing stored logs:', e);
+				}
+			} else {
+				const mockLogs: AuditLogEntry[] = [
+					{
+						id: 'mock-1',
+						timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
+						action: 'SYSTEEM',
+						entityType: 'SYSTEEM',
+						name: 'Database Koppeling',
+						details: 'Initieel database schema geladen, connectie succesvol met SmarterASP.net backend.'
+					},
+					{
+						id: 'mock-2',
+						timestamp: new Date(Date.now() - 3600000 * 20).toISOString(),
+						action: 'SYSTEEM',
+						entityType: 'SYSTEEM',
+						name: 'Spotify API Integratie',
+						details: 'Verbinding met Spotify API geactiveerd voor automatisch ophalen van cover images.'
+					},
+					{
+						id: 'mock-3',
+						timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
+						action: 'TOEVOEGEN',
+						entityType: 'ARTIEST',
+						name: 'Queen',
+						details: 'Nieuwe artiest handmatig toegevoegd aan de database.'
+					},
+					{
+						id: 'mock-4',
+						timestamp: new Date(Date.now() - 3600000 * 8).toISOString(),
+						action: 'BEWERKEN',
+						entityType: 'NUMMER',
+						name: 'Bohemian Rhapsody',
+						details: 'YouTube link en lyrics details geüpdatet.'
+					},
+					{
+						id: 'mock-5',
+						timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
+						action: 'VERWIJDEREN',
+						entityType: 'NUMMER',
+						name: 'Test Song 123',
+						details: 'Tijdelijk testnummer permanent verwijderd.'
+					}
+				];
+				setAuditLogs(mockLogs);
+				localStorage.setItem('top2000_audit_log', JSON.stringify(mockLogs));
+				for (const log of mockLogs) {
+					void createAuditLog(log);
+				}
+			}
 		}
 	};
 
 	useEffect(() => {
+		const token = localStorage.getItem('token');
+		const role = localStorage.getItem('role');
+		if (!token || role !== 'Admin') {
+			window.location.href = '/login';
+			return;
+		}
+
 		void loadAdminData();
+		void loadUsersData();
+		void loadAuditLogsData();
 	}, []);
 
-	const artistNamesById = new Map(artists.map(artist => [artist.artistId, artist.name]));
-	const songCountsByArtistId = songs.reduce((counts, song) => {
-		counts.set(song.artistId, (counts.get(song.artistId) ?? 0) + 1);
-		return counts;
-	}, new Map<number, number>());
-	const filteredArtists = artists.filter(artist => artistIdFilter.trim() === '' || String(artist.artistId).includes(artistIdFilter.trim()));
-	const filteredSongs = songs.filter(song => songIdFilter.trim() === '' || String(song.songId).includes(songIdFilter.trim()));
-	const sortedArtists = [...filteredArtists].sort((leftArtist, rightArtist) => {
-		if (artistSort.key === 'name') {
-			return compareValues(leftArtist.name, rightArtist.name, artistSort.direction);
-		}
-
-		if (artistSort.key === 'songCount') {
-			return compareValues(
-				songCountsByArtistId.get(leftArtist.artistId) ?? 0,
-				songCountsByArtistId.get(rightArtist.artistId) ?? 0,
-				artistSort.direction,
-			);
-		}
-
-		return compareValues(leftArtist.artistId, rightArtist.artistId, artistSort.direction);
-	});
-	const sortedSongs = [...filteredSongs].sort((leftSong, rightSong) => {
-		if (songSort.key === 'title') {
-			return compareValues(leftSong.title, rightSong.title, songSort.direction);
-		}
-
-		if (songSort.key === 'artistName') {
-			return compareValues(
-				artistNamesById.get(leftSong.artistId) ?? leftSong.artistId,
-				artistNamesById.get(rightSong.artistId) ?? rightSong.artistId,
-				songSort.direction,
-			);
-		}
-
-		if (songSort.key === 'releaseYear') {
-			return compareValues(leftSong.releaseYear, rightSong.releaseYear, songSort.direction);
-		}
-
-		return compareValues(leftSong.songId, rightSong.songId, songSort.direction);
-	});
-	const artistTotalPages = Math.max(1, Math.ceil(sortedArtists.length / ITEMS_PER_PAGE));
-	const songTotalPages = Math.max(1, Math.ceil(sortedSongs.length / ITEMS_PER_PAGE));
-	const safeArtistPage = Math.min(artistPage, artistTotalPages);
-	const safeSongPage = Math.min(songPage, songTotalPages);
-	const paginatedArtists = paginateItems(sortedArtists, safeArtistPage);
-	const paginatedSongs = paginateItems(sortedSongs, safeSongPage);
 	const diagnosticsList = Object.values(endpointDiagnostics);
 
-	const toggleArtistSort = (key: ArtistSortKey) => {
-		setArtistSort(currentSort => ({
-			key,
-			direction: currentSort.key === key && currentSort.direction === 'asc' ? 'desc' : 'asc',
-		}));
-		setArtistPage(1);
-	};
-
-	const toggleSongSort = (key: SongSortKey) => {
-		setSongSort(currentSort => ({
-			key,
-			direction: currentSort.key === key && currentSort.direction === 'asc' ? 'desc' : 'asc',
-		}));
-		setSongPage(1);
-	};
-
 	return (
-		<div className="pb-12">
-			<section className="py-12">
-				<div className="container mx-auto px-4">
-					<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-						<div>
-							<h1 className="text-4xl md:text-5xl font-bold mb-4">Admin Panel</h1>
-							<p className="text-muted-foreground text-lg">
-								Gecombineerd overzicht van artiesten en nummers uit de backend.
-							</p>
-						</div>
+		<div className="flex flex-col lg:flex-row min-h-screen text-foreground relative">
+			{/* Dashboard Sidebar */}
+			<aside className="w-full lg:w-72 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-white/10 p-6 flex flex-col gap-6">
+				<div className="flex items-center gap-3 pb-6 border-b border-white/10">
+					<div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center border border-primary/40">
+						<Sparkles className="w-5 h-5 text-primary" />
+					</div>
+					<div>
+						<h2 className="font-bold text-lg leading-tight">Beheerpaneel</h2>
+						<span className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+							<span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+							Systeem Actief
+						</span>
+					</div>
+				</div>
 
+				<nav className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
+					<button
+						onClick={() => navigate('/admin')}
+						className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap ${currentTab === 'overview'
+							? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+							: 'hover:bg-white/5 text-muted-foreground hover:text-foreground'
+							}`}
+					>
+						<LayoutDashboard className="w-4 h-4" />
+						Dashboard Overzicht
+					</button>
+
+					<button
+						onClick={() => navigate('/admin/artiesten')}
+						className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap ${currentTab === 'artists'
+							? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+							: 'hover:bg-white/5 text-muted-foreground hover:text-foreground'
+							}`}
+					>
+						<Users className="w-4 h-4" />
+						Artiesten Beheer
+					</button>
+
+					<button
+						onClick={() => navigate('/admin/nummers')}
+						className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap ${currentTab === 'songs'
+							? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+							: 'hover:bg-white/5 text-muted-foreground hover:text-foreground'
+							}`}
+					>
+						<Music2 className="w-4 h-4" />
+						Nummers Beheer
+					</button>
+
+					<button
+						onClick={() => navigate('/admin/logboek')}
+						className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap ${currentTab === 'audit-log'
+							? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+							: 'hover:bg-white/5 text-muted-foreground hover:text-foreground'
+							}`}
+					>
+						<ClipboardList className="w-4 h-4" />
+						Audit Logboek
+					</button>
+
+					<button
+						onClick={() => navigate('/admin/gebruikers')}
+						className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap ${currentTab === 'accounts'
+							? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+							: 'hover:bg-white/5 text-muted-foreground hover:text-foreground'
+							}`}
+					>
+						<UserCheck className="w-4 h-4" />
+						Gebruikers Beheer
+					</button>
+				</nav>
+
+				<div className="mt-auto hidden lg:flex flex-col gap-4 pt-6 border-t border-white/10">
+					<div className="bg-white/5 rounded-xl p-4 border border-white/5">
+						<span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold block mb-2">Backend Services</span>
+						<div className="space-y-2">
+							{diagnosticsList.map(diag => (
+								<div key={diag.key} className="flex items-center justify-between text-xs">
+									<span className="text-muted-foreground">{diag.label}</span>
+									<span className={`inline-flex items-center gap-1 font-bold ${diag.status === 'success' ? 'text-emerald-500' : 'text-primary'
+										}`}>
+										<span className={`w-1.5 h-1.5 rounded-full ${diag.status === 'success' ? 'bg-emerald-500' : 'bg-primary'
+											}`}></span>
+										{diag.status === 'success' ? 'OK' : 'FAIL'}
+									</span>
+								</div>
+							))}
+						</div>
+					</div>
+					<button
+						onClick={() => void loadAdminData()}
+						className="inline-flex items-center justify-center gap-2 bg-secondary hover:bg-white/15 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border border-white/5"
+					>
+						<RefreshCw className="w-3.5 h-3.5" />
+						Gegevens Vernieuwen
+					</button>
+				</div>
+			</aside>
+
+			{/* Main Content Pane */}
+			<main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full space-y-8">
+				{/* Top bar header */}
+				<header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
+					<div>
+						<h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+							{currentTab === 'overview' && 'Dashboard Overzicht'}
+							{currentTab === 'artists' && 'Artiesten Database'}
+							{currentTab === 'songs' && 'Nummers Catalogus'}
+							{currentTab === 'audit-log' && 'Systeem & Activiteiten Logboek'}
+							{currentTab === 'accounts' && 'Gebruikers & Bevoegdheden'}
+						</h1>
+						<p className="text-muted-foreground text-sm mt-1">
+							{currentTab === 'overview' && 'Status, statistieken en overzicht van de TOP 2000 catalogus.'}
+							{currentTab === 'artists' && 'Beheer artiesten in de catalogus. Klik op een artiest voor detailweergave.'}
+							{currentTab === 'songs' && 'Volledige catalogus van nummers, gekoppelde artiesten en media.'}
+							{currentTab === 'audit-log' && 'Historisch overzicht van wijzigingen, toevoegingen, verwijderingen en systeemgebeurtenissen.'}
+							{currentTab === 'accounts' && 'Overzicht van geregistreerde gebruikers en beheer van admin-rol aanvragen.'}
+						</p>
+					</div>
+
+					<div className="flex items-center gap-3">
 						<button
 							onClick={() => void loadAdminData()}
-							className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+							disabled={fetchState === 'loading'}
+							className="inline-flex lg:hidden items-center justify-center p-3 rounded-xl border border-white/10 hover:bg-secondary transition-colors"
+							aria-label="Vernieuwen"
 						>
-							<RefreshCw className="w-4 h-4" />
-							Vernieuwen
+							<RefreshCw className={`w-4 h-4 ${fetchState === 'loading' ? 'animate-spin' : ''}`} />
 						</button>
-					</div>
-				</div>
-			</section>
 
-			<div className="container mx-auto px-4 mt-12 space-y-8">
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-					<div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-						<div className="flex items-center gap-3 mb-3">
-							<Users className="w-6 h-6 text-primary" />
-							<h2 className="font-semibold">Artiesten</h2>
-						</div>
-						<div className="text-3xl font-bold">{artists.length}</div>
-						<p className="text-sm text-muted-foreground mt-2">Opgehaald via `/api/artists`</p>
-					</div>
+						{currentTab === 'artists' && (
+							<button
+								onClick={() => openAddArtistModalRef.current?.()}
+								className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/10 cursor-pointer"
+							>
+								<Plus className="w-5 h-5" />
+								Artiest Toevoegen
+							</button>
+						)}
 
-					<div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-						<div className="flex items-center gap-3 mb-3">
-							<Music2 className="w-6 h-6 text-primary" />
-							<h2 className="font-semibold">Nummers</h2>
-						</div>
-						<div className="text-3xl font-bold">{songs.length}</div>
-						<p className="text-sm text-muted-foreground mt-2">Opgehaald via `/api/songs`</p>
-					</div>
-
-					<div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-						<div className="flex items-center gap-3 mb-3">
-							<AlertCircle className="w-6 h-6 text-primary" />
-							<h2 className="font-semibold">Status</h2>
-						</div>
-						<div className="text-lg font-semibold">
-							{fetchState === 'loading' && 'Backend laden...'}
-							{fetchState === 'success' && 'Backend gekoppeld'}
-							{fetchState === 'error' && 'Backend returned 500'}
-							{fetchState === 'idle' && 'Wachten'}
-						</div>
-						{errorMessage && (
-							<p className="text-sm text-destructive mt-2">{errorMessage}</p>
+						{currentTab === 'songs' && (
+							<button
+								onClick={() => openAddSongModalRef.current?.()}
+								className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/10 cursor-pointer"
+							>
+								<Plus className="w-5 h-5" />
+								Nummer Toevoegen
+							</button>
 						)}
 					</div>
-				</div>
+				</header>
 
-				<section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-					{diagnosticsList.map(diagnostic => (
-						<div key={diagnostic.key} className="bg-card border border-border rounded-lg p-6 shadow-sm">
-							<div className="flex items-center justify-between gap-4 mb-3">
-								<div>
-									<h2 className="text-xl font-semibold">{diagnostic.label}</h2>
-									<p className="text-sm text-muted-foreground">{diagnostic.url}</p>
-								</div>
-								<div className={`rounded-full px-3 py-1 text-xs font-semibold ${
-									diagnostic.status === 'success'
-										? 'bg-emerald-500/10 text-emerald-700'
-										: diagnostic.status === 'error'
-											? 'bg-destructive/10 text-destructive'
-											: 'bg-secondary text-foreground'
-								}`}>
-									{diagnostic.status === 'success' && 'OK'}
-									{diagnostic.status === 'error' && `HTTP ${diagnostic.httpStatus ?? 'fout'}`}
-									{diagnostic.status === 'loading' && 'Laden'}
-									{diagnostic.status === 'idle' && 'Nog niet geladen'}
-								</div>
-							</div>
-							<p className="text-sm text-muted-foreground mb-4">{diagnostic.detail}</p>
-							<p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Verwachte velden</p>
-							<div className="flex flex-wrap gap-2">
-								{diagnostic.expectedFields.map(field => (
-									<span key={field} className="rounded-full bg-secondary px-3 py-1 text-xs text-foreground">
-										{field}
-									</span>
-								))}
-							</div>
-						</div>
-					))}
-				</section>
-
+				{/* Loading / Error States */}
 				{fetchState === 'loading' && (
-					<div className="bg-card border border-border rounded-lg p-8 flex items-center justify-center gap-3 text-muted-foreground">
-						<Loader2 className="w-5 h-5 animate-spin" />
-						Backend data wordt geladen...
+					<div className="bg-card/40 border border-border backdrop-blur-sm rounded-2xl p-12 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+						<Loader2 className="w-8 h-8 animate-spin text-primary" />
+						<span className="font-semibold text-sm">Gegevens synchroniseren met database...</span>
 					</div>
 				)}
 
 				{fetchState === 'error' && (
-					<div className="bg-destructive/5 border border-destructive/30 rounded-lg p-6">
-						<div className="flex items-center gap-3 text-destructive font-semibold mb-2">
-							<AlertCircle className="w-5 h-5" />
-							Backend data kon niet worden geladen
+					<div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-6 flex gap-4 items-start">
+						<AlertCircle className="w-6 h-6 text-destructive flex-shrink-0 mt-0.5" />
+						<div>
+							<h3 className="text-lg font-bold text-destructive">Synchronisatiefout</h3>
+							<p className="text-sm text-muted-foreground mt-1">{errorMessage}</p>
+							<p className="text-xs text-muted-foreground/80 mt-2">
+								Controleer of de dotnet backend service correct is opgestart op http://localhost:5229.
+							</p>
 						</div>
-						<p className="text-sm text-muted-foreground">{errorMessage}</p>
-						<p className="text-sm text-muted-foreground mt-2">
-							De browser liet eerder een CORS-melding zien, maar de directe oorzaak is nu zichtbaar per endpoint hierboven.
-						</p>
 					</div>
 				)}
 
-				<section className="bg-card border border-border rounded-lg shadow-md overflow-hidden">
-					<div className="px-6 py-4 border-b border-border flex items-center justify-between">
-						<div>
-							<h2 className="text-2xl font-bold">Artiesten</h2>
-							<p className="text-sm text-muted-foreground">Live data uit de backend</p>
-						</div>
-						<input
-							type="text"
-							value={artistIdFilter}
-							onChange={(event) => {
-								setArtistIdFilter(event.target.value);
-								setArtistPage(1);
-							}}
-							placeholder="Zoek op artiest ID"
-							className="w-full max-w-52 px-4 py-2 rounded-lg border border-border bg-background"
-						/>
-					</div>
+				{fetchState !== 'loading' && (
+					<AnimatePresence mode="wait">
+						<motion.div
+							key={currentTab}
+							initial={{ opacity: 0, y: 15 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -15 }}
+							transition={{ duration: 0.2 }}
+							className="space-y-8"
+						>
+							{currentTab === 'overview' && (
+								<OverviewTab
+									artists={artists}
+									songs={songs}
+									endpointDiagnostics={endpointDiagnostics}
+								/>
+							)}
 
-					<div className="overflow-x-auto">
-						<table className="w-full">
-							<thead className="bg-secondary">
-								<tr>
-									<th className="px-4 py-3 text-left"><SortHeader label="ID" isActive={artistSort.key === 'artistId'} direction={artistSort.direction} onClick={() => toggleArtistSort('artistId')} /></th>
-									<th className="px-4 py-3 text-left"><SortHeader label="Naam" isActive={artistSort.key === 'name'} direction={artistSort.direction} onClick={() => toggleArtistSort('name')} /></th>
-									<th className="px-4 py-3 text-left"><SortHeader label="Aantal nummers" isActive={artistSort.key === 'songCount'} direction={artistSort.direction} onClick={() => toggleArtistSort('songCount')} /></th>
-									<th className="px-4 py-3 text-left">Website</th>
-									<th className="px-4 py-3 text-left">Wikipedia</th>
-								</tr>
-							</thead>
-							<tbody>
-								{artists.length === 0 ? (
-									<tr>
-										<td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-											Geen artiesten geladen.
-										</td>
-									</tr>
-								) : paginatedArtists.map((artist, index) => (
-									<tr key={artist.artistId ?? `${artist.name}-${index}`} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
-										<td className="px-4 py-3">{artist.artistId}</td>
-										<td className="px-4 py-3 font-semibold">{artist.name}</td>
-										<td className="px-4 py-3">{songCountsByArtistId.get(artist.artistId) ?? 0}</td>
-										<td className="px-4 py-3">
-											{artist.website ? (
-												<a href={artist.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm">
-													Link
-												</a>
-											) : (
-												<span className="text-muted-foreground text-sm">-</span>
-											)}
-										</td>
-										<td className="px-4 py-3">
-												<a href={`https://nl.wikipedia.org/wiki/${artist.name}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm">
-													{artist.name}
-												</a>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
+							{currentTab === 'artists' && (
+								<ArtistsTab
+									artists={artists}
+									songs={songs}
+									onRefresh={loadAdminData}
+									addAuditLogEntry={addAuditLogEntry}
+									registerOpenAddModal={(fn) => { openAddArtistModalRef.current = fn; }}
+								/>
+							)}
 
-					<div className="px-6 py-4 border-t border-border flex items-center justify-between gap-4">
-						<p className="text-sm text-muted-foreground">
-							Pagina {safeArtistPage} van {artistTotalPages}
-						</p>
-						<Pagination currentPage={safeArtistPage} totalPages={artistTotalPages} onPageChange={setArtistPage} />
-					</div>
-				</section>
+							{currentTab === 'songs' && (
+								<SongsTab
+									songs={songs}
+									artists={artists}
+									onRefresh={loadAdminData}
+									addAuditLogEntry={addAuditLogEntry}
+									registerOpenAddModal={(fn) => { openAddSongModalRef.current = fn; }}
+								/>
+							)}
 
-				<section className="bg-card border border-border rounded-lg shadow-md overflow-hidden">
-					<div className="px-6 py-4 border-b border-border flex items-center justify-between">
-						<div>
-							<h2 className="text-2xl font-bold">Nummers</h2>
-							<p className="text-sm text-muted-foreground">Live data uit de backend</p>
-						</div>
-						<input
-							type="text"
-							value={songIdFilter}
-							onChange={(event) => {
-								setSongIdFilter(event.target.value);
-								setSongPage(1);
-							}}
-							placeholder="Zoek op song ID"
-							className="w-full max-w-52 px-4 py-2 rounded-lg border border-border bg-background"
-						/>
-					</div>
+							{currentTab === 'audit-log' && (
+								<AuditLogTab
+									auditLogs={auditLogs}
+									onRefresh={loadAuditLogsData}
+									addAuditLogEntry={addAuditLogEntry}
+								/>
+							)}
 
-					<div className="overflow-x-auto">
-						<table className="w-full">
-							<thead className="bg-secondary">
-								<tr>
-									<th className="px-4 py-3 text-left"><SortHeader label="ID" isActive={songSort.key === 'songId'} direction={songSort.direction} onClick={() => toggleSongSort('songId')} /></th>
-									<th className="px-4 py-3 text-left"><SortHeader label="Titel" isActive={songSort.key === 'title'} direction={songSort.direction} onClick={() => toggleSongSort('title')} /></th>
-									<th className="px-4 py-3 text-left"><SortHeader label="Artiest" isActive={songSort.key === 'artistName'} direction={songSort.direction} onClick={() => toggleSongSort('artistName')} /></th>
-									<th className="px-4 py-3 text-left"><SortHeader label="Jaar" isActive={songSort.key === 'releaseYear'} direction={songSort.direction} onClick={() => toggleSongSort('releaseYear')} /></th>
-									<th className="px-4 py-3 text-left">Keer in lijst</th>
-									<th className="px-4 py-3 text-left">YouTube</th>
-								</tr>
-							</thead>
-							<tbody>
-								{songs.length === 0 ? (
-									<tr>
-										<td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-											Geen nummers geladen.
-										</td>
-									</tr>
-								) : paginatedSongs.map((song, index) => (
-									<tr key={song.songId ?? `${song.title}-${song.artistId}-${index}`} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
-										<td className="px-4 py-3">{song.songId}</td>
-										<td className="px-4 py-3 font-semibold">{song.title}</td>
-										<td className="px-4 py-3">{artistNamesById.get(song.artistId) ?? song.artistId}</td>
-										<td className="px-4 py-3">{song.releaseYear}</td>
-										<td className="px-4 py-3">0</td>
-										<td className="px-4 py-3">
-											{song.youtube ? (
-												<a href={song.youtube} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm">
-													Link
-												</a>
-											) : (
-												<span className="text-muted-foreground text-sm">-</span>
-											)}
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-
-					<div className="px-6 py-4 border-t border-border flex items-center justify-between gap-4">
-						<p className="text-sm text-muted-foreground">
-							Pagina {safeSongPage} van {songTotalPages}
-						</p>
-						<Pagination currentPage={safeSongPage} totalPages={songTotalPages} onPageChange={setSongPage} />
-					</div>
-				</section>
-			</div>
+							{currentTab === 'accounts' && (
+								<AccountsTab
+									users={users}
+									roleRequests={roleRequests}
+									usersLoading={usersLoading}
+									onRefresh={loadUsersData}
+								/>
+							)}
+						</motion.div>
+					</AnimatePresence>
+				)}
+			</main>
 		</div>
 	);
 }

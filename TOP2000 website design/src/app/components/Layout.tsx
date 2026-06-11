@@ -176,9 +176,9 @@ export function Layout() {
                             <>
                               <div className="border-t border-border my-1"></div>
                               <Link
-                                to="/admin"
-                                className="block px-4 py-2 hover:bg-secondary transition-colors"
-                                onClick={() => setUserMenuOpen(false)}
+                                  to="/admin"
+                                  className="block px-4 py-2 hover:bg-secondary transition-colors"
+                                  onClick={() => setUserMenuOpen(false)}
                               >
                                 <div className="flex items-center gap-2">
                                   <Shield className="w-4 h-4" />
@@ -331,7 +331,6 @@ export function Layout() {
               >
                 Contact
               </Link>
-              
               {localStorage.getItem('token') && (
                 <Link
                   to="/playlists"

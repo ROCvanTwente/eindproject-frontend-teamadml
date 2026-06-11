@@ -23,6 +23,7 @@ import { CreatePlaylistPage } from './pages/CreatePlaylistPage';
 import { PlaylistDetailPage } from './pages/PlaylistDetailPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
+import { Toaster } from './components/ui/sonner';
 
 const BACKEND_ENDPOINTS = [
   { label: 'GET /api/artists', url: '/api/artists' },
@@ -79,15 +80,16 @@ export default function App() {
           <Route path="playlists" element={<PlaylistsPage />} />
           <Route path="playlists/new" element={<CreatePlaylistPage />} />
           <Route path="playlist/:id" element={<PlaylistDetailPage />} />
-          <Route element={<AdminRoute />}>
-            <Route path="admin" element={<AdminPanel />} />
-            <Route path="admin/artiesten" element={<AdminPanel />} />
-            <Route path="admin/nummers" element={<AdminPanel />} />
-          </Route>
+          <Route path="admin" element={<AdminPanel />} />
+          <Route path="admin/artiesten" element={<AdminPanel />} />
+          <Route path="admin/nummers" element={<AdminPanel />} />
+          <Route path="admin/logboek" element={<AdminPanel />} />
+          <Route path="admin/gebruikers" element={<AdminPanel />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
         </Route>
       </Routes>
+      <Toaster />
     </BrowserRouter>
   );
 }
