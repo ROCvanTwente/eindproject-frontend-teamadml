@@ -3,7 +3,7 @@ import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
-const backendTarget = 'https://top2000teamadml.runasp.net'
+const backendTarget = 'http://localhost:5229'
 
 
 function figmaAssetResolver() {
@@ -38,7 +38,7 @@ export default defineConfig({
       '/api': {
         target: backendTarget,
         changeOrigin: true,
-        secure: true,
+        secure: false,
       },
     },
   },
