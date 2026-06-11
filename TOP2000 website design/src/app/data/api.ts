@@ -71,6 +71,13 @@ export type BackendSong = {
   artist?: BackendArtist; // added to match backend
 };
 
+export type BackendTop2000Entry = {
+  songId: number;
+  year: number;
+  position: number;
+  song: BackendSong;
+};
+
 export const API_ENDPOINTS = {
   artists: '/api/artists',
   songs: '/api/songs',
@@ -96,9 +103,21 @@ async function fetchJson<T>(
     const options: RequestInit = {
       method,
       cache: 'no-store',
+      headers: {}
     };
+
+    // Attach Bearer token from localStorage if available
+    const token = localStorage.getItem('token');
+    if (token) {
+      options.headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`
+      };
+    }
+
     if (bodyData !== undefined) {
       options.headers = {
+        ...options.headers,
         'Content-Type': 'application/json',
       };
       options.body = JSON.stringify(bodyData);
@@ -223,6 +242,28 @@ export function fetchTop2000Years() {
   return fetchJson<number[]>(API_ENDPOINTS.top2000);
 }
 
+export function fetchTop2000ByYear(year: number) {
+  return fetchJson<BackendTop2000Entry[]>(`${API_ENDPOINTS.top2000}/${year}`);
+}
+
+export async function loadTop2000ByYear(year: number) {
+  const result = await loadArrayEndpoint(() => fetchTop2000ByYear(year), `Muzieklijst voor ${year} kon niet worden geladen.`);
+  if (result.ok && result.data) {
+    result.data = result.data.map(entry => ({
+      ...entry,
+      song: entry.song ? {
+        ...entry.song,
+        albumCover: entry.song.albumCover ?? entry.song.imgUrl,
+        imgUrl: entry.song.imgUrl ?? entry.song.albumCover,
+        lyricsPreview: entry.song.lyricsPreview ?? entry.song.lyrics,
+        lyrics: entry.song.lyrics ?? entry.song.lyricsPreview,
+        artistName: entry.song.artistName ?? entry.song.artist?.name,
+      } : entry.song
+    }));
+  }
+  return result;
+}
+
 export async function loadArtistsCatalog() {
   const result = await loadArrayEndpoint(fetchArtists, `${API_ENDPOINTS.artists} returned an unexpected JSON shape.`);
   if (result.ok && result.data) {
@@ -323,4 +364,66 @@ export function updateSong(id: number, song: BackendSong) {
 
 export function deleteSong(id: number) {
   return fetchJson<void>(`${API_ENDPOINTS.songs}/${id}`, 'DELETE');
+}
+
+export type AuditAction = 'TOEVOEGEN' | 'BEWERKEN' | 'VERWIJDEREN' | 'SYSTEEM';
+export type AuditEntityType = 'NUMMER' | 'ARTIEST' | 'SYSTEEM';
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  action: AuditAction;
+  entityType: AuditEntityType;
+  name: string;
+  details: string;
+}
+
+export function fetchAuditLogs() {
+  return fetchJson<AuditLogEntry[]>('/api/audit-logs');
+}
+
+export function createAuditLog(log: Omit<AuditLogEntry, 'id' | 'timestamp'> & { id?: string; timestamp?: string }) {
+  return fetchJson<AuditLogEntry>('/api/audit-logs', 'POST', log);
+}
+
+export function clearAuditLogs() {
+  return fetchJson<void>('/api/audit-logs', 'DELETE');
+}
+
+export interface BackendUser {
+  userId: number;
+  username: string;
+  role: string;
+  createdAtUtc: string;
+}
+
+export interface RoleChangeRequest {
+  id: number;
+  targetUserId: number;
+  targetUsername: string;
+  newRole: string;
+  requestedBy: string;
+  createdAtUtc: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  approvedBy?: string;
+  approvedAtUtc?: string;
+}
+
+export function fetchUsers() {
+  return fetchJson<BackendUser[]>('/api/users');
+}
+
+export function fetchRoleRequests() {
+  return fetchJson<RoleChangeRequest[]>('/api/users/requests');
+}
+
+export function createRoleRequest(targetUserId: number, newRole: string) {
+  return fetchJson<RoleChangeRequest>('/api/users/request-role', 'POST', { targetUserId, newRole });
+}
+
+export function approveRoleRequest(id: number) {
+  return fetchJson<void>(`/api/users/approve-role/${id}`, 'POST');
+}
+
+export function rejectRoleRequest(id: number) {
+  return fetchJson<void>(`/api/users/reject-role/${id}`, 'POST');
 }

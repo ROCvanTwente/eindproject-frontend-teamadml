@@ -3,13 +3,45 @@ import { LogIn } from 'lucide-react';
 
 export function LoginPage() {
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
+  
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Login functionaliteit wordt binnenkort toegevoegd!');
+    setErrorMessage('');
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Sla alle benodigde gegevens op!
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.username);
+        localStorage.setItem('role', data.role); // <--- Dit zorgt voor de Admin check!
+
+        // Stuur terug naar de homepagina zodat de layout herlaadt
+        window.location.href = "/"; 
+      } else {
+        setErrorMessage('Verkeerde gebruikersnaam of wachtwoord ingevuld.');
+      }
+    } catch (error) {
+      console.error("Fout bij inloggen:", error);
+      setErrorMessage('Kan de server niet bereiken. Staat je backend aan?');
+    }
   };
 
   return (
@@ -19,7 +51,7 @@ export function LoginPage() {
         <div className="container mx-auto px-4">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Inloggen</h1>
           <p className="text-muted-foreground text-lg">
-            Log in om toegang te krijgen tot je persoonlijke playlists
+            Log in om toegang te krijgen tot het admin paneel
           </p>
         </div>
       </section>
@@ -27,19 +59,28 @@ export function LoginPage() {
       <div className="container mx-auto px-4 mt-12">
         <div className="max-w-md mx-auto">
           <div className="bg-card border border-border rounded-lg p-8 shadow-md">
+            
+            {/* Foutmelding tonen als het inloggen mislukt */}
+            {/* Display error message */}
+            {errorMessage && (
+              <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                {errorMessage}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="email" className="block mb-2">
-                  E-mailadres
+                <label htmlFor="username" className="block mb-2">
+                  Gebruikersnaam
                 </label>
                 <input
-                  type="email"
-                  id="email"
+                  type="text"
+                  id="username"
                   required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input-background"
-                  placeholder="jouw@email.nl"
+                  placeholder="Bijv. admin"
                 />
               </div>
 
