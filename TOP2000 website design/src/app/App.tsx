@@ -25,6 +25,27 @@ import { TermsPage } from './pages/TermsPage';
 import { AdminSongEditPage } from './pages/AdminSongEditPage';
 
 
+const AdminRoute = () => {
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
+
+  try {
+    const decoded: any = jwtDecode(token);
+    const role = decoded.role || decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+
+    if (role !== 'Admin') {
+      return <Navigate to="/" replace />;
+    }
+    
+    return <Outlet />;
+  } catch (error) {
+    return <Navigate to="/" replace />;
+  }
+};
+
 export default function App() {
   return (
     <BrowserRouter
@@ -62,6 +83,7 @@ export default function App() {
           <Route path="register" element={<RegisterPage />} />
         </Route>
       </Routes>
+      <Toaster />
     </BrowserRouter>
   );
 }

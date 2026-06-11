@@ -6,7 +6,7 @@ import { loadSongsCatalog, type BackendSong } from '../data/api';
 type FetchState = 'idle' | 'loading' | 'success' | 'error';
 
 export function ListPage() {
-  const [selectedYear, setSelectedYear] = useState('2024');
+  const [selectedYear, setSelectedYear] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [positionFilter, setPositionFilter] = useState('all');
   const [visibleCount, setVisibleCount] = useState(20);
@@ -45,7 +45,12 @@ export function ListPage() {
     };
   }, []);
 
-  const years = Array.from({ length: 26 }, (_, i) => (2024 - i).toString());
+  const [years, setYears] = useState<string[]>([]);
+  const [entries, setEntries] = useState<BackendTop2000Entry[]>([]);
+  const [previousEntriesMap, setPreviousEntriesMap] = useState<Map<number, number>>(new Map());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [fallbackNotice, setFallbackNotice] = useState('');
 
   const filteredSongs = songs.filter(song => {
     const matchesSearch =
@@ -104,7 +109,8 @@ export function ListPage() {
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full px-4 py-2 border border-border rounded-lg appearance-none bg-input-background focus:outline-none focus:ring-2 focus:ring-primary pr-10"
+                  disabled={years.length === 0}
+                  className="w-full px-4 py-2 border border-border rounded-lg appearance-none bg-input-background focus:outline-none focus:ring-2 focus:ring-primary pr-10 disabled:opacity-55"
                 >
                   {years.map(year => (
                     <option key={year} value={year}>{year}</option>
@@ -149,9 +155,17 @@ export function ListPage() {
           </div>
         </div>
 
+        {/* Fallback year warning banner */}
+        {fallbackNotice && !loading && (
+          <div className="bg-primary/10 border border-primary/25 text-foreground px-4 py-3 rounded-lg mb-6 flex items-center gap-3 animate-fade-in">
+            <AlertCircle className="w-5 h-5 text-primary flex-shrink-0" />
+            <span className="text-sm font-medium">{fallbackNotice}</span>
+          </div>
+        )}
+
         {/* Results Summary */}
         <div className="mb-4 text-muted-foreground">
-          {filteredSongs.length} {filteredSongs.length === 1 ? 'nummer' : 'nummers'} gevonden
+          {loading ? 'Laden...' : `${filteredSongs.length} ${filteredSongs.length === 1 ? 'nummer' : 'nummers'} gevonden`}
         </div>
 
         {/* Songs List */}
@@ -205,15 +219,12 @@ export function ListPage() {
           ))}
         </div>
 
-        {/* Load More */}
-        {visibleCount < filteredSongs.length && (
-          <div className="text-center mt-8">
-            <button
-              onClick={() => setVisibleCount(prev => prev + 20)}
-              className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Laad meer nummers
-            </button>
+            {filteredSongs.length === 0 && (
+              <div className="text-center py-16">
+                <h3 className="text-xl font-semibold mb-2">Geen nummers gevonden</h3>
+                <p className="text-muted-foreground">Probeer een andere filter of zoekterm</p>
+              </div>
+            )}
           </div>
         )}
           </>

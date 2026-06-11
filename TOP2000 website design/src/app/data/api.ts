@@ -49,7 +49,9 @@ export type BackendArtist = {
   name: string;
   website?: string;
   bio?: string;
+  biography?: string; // added to match backend
   photoUrl?: string;
+  photo?: string; // added to match backend
   wikiUrl?: string;
   numberOfSongs?: number;
 };
@@ -69,8 +71,18 @@ export type BackendSong = {
   youtube?: string;
   artistName?: string;
   albumCover?: string;
+  imgUrl?: string; // added to match backend
   lyricsPreview?: string;
+  lyrics?: string; // added to match backend
   timesListed?: number;
+  artist?: BackendArtist; // added to match backend
+};
+
+export type BackendTop2000Entry = {
+  songId: number;
+  year: number;
+  position: number;
+  song: BackendSong;
 };
 
 type RawBackendSong = BackendSong & {
@@ -111,9 +123,35 @@ function getResponseMessage(url: string, status: number, body: string) {
   return `${url} returned ${status}.`;
 }
 
-async function fetchJson<T>(url: string): Promise<ApiResult<T>> {
+async function fetchJson<T>(
+  url: string,
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+  bodyData?: unknown
+): Promise<ApiResult<T>> {
   try {
-    const response = await fetch(url, { cache: 'no-store' });
+    const options: RequestInit = {
+      method,
+      cache: 'no-store',
+      headers: {}
+    };
+
+    // Attach Bearer token from localStorage if available
+    const token = localStorage.getItem('token');
+    if (token) {
+      options.headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`
+      };
+    }
+
+    if (bodyData !== undefined) {
+      options.headers = {
+        ...options.headers,
+        'Content-Type': 'application/json',
+      };
+      options.body = JSON.stringify(bodyData);
+    }
+    const response = await fetch(url, options);
     const body = await response.text();
 
     if (!response.ok) {
@@ -125,12 +163,12 @@ async function fetchJson<T>(url: string): Promise<ApiResult<T>> {
       };
     }
 
-    if (body.trim().length === 0) {
+    if (method === 'DELETE' || response.status === 204 || body.trim().length === 0) {
       return {
-        ok: false,
+        ok: true,
         url,
         status: response.status,
-        message: `${url} returned an empty response body.`,
+        data: null as unknown as T,
       };
     }
 
@@ -433,8 +471,8 @@ export function fetchTop2000Years() {
   return fetchJson<number[]>(API_ENDPOINTS.top2000);
 }
 
-export function loadArtistsCatalog() {
-  return loadArrayEndpoint(fetchArtists, `${API_ENDPOINTS.artists} returned an unexpected JSON shape.`);
+export function fetchTop2000ByYear(year: number) {
+  return fetchJson<BackendTop2000Entry[]>(`${API_ENDPOINTS.top2000}/${year}`);
 }
 
 export async function loadSongsCatalog(): Promise<EndpointLoadResult<BackendSong>> {
@@ -460,6 +498,24 @@ export async function loadAdminCatalog(): Promise<AdminCatalogLoadResult> {
 
   const artists = toArrayData(artistsResult, `${API_ENDPOINTS.artists} returned an unexpected JSON shape.`);
   const songs = toArrayData(songsResult, `${API_ENDPOINTS.songs} returned an unexpected JSON shape.`);
+
+  const mappedArtists = artists.data.map(artist => ({
+    ...artist,
+    bio: artist.bio ?? artist.biography,
+    biography: artist.biography ?? artist.bio,
+    photoUrl: artist.photoUrl ?? artist.photo,
+    photo: artist.photo ?? artist.photoUrl,
+  }));
+
+  const mappedSongs = songs.data.map(song => ({
+    ...song,
+    albumCover: song.albumCover ?? song.imgUrl,
+    imgUrl: song.imgUrl ?? song.albumCover,
+    lyricsPreview: song.lyricsPreview ?? song.lyrics,
+    lyrics: song.lyrics ?? song.lyricsPreview,
+    artistName: song.artistName ?? song.artist?.name,
+  }));
+
   const diagnostics = {
     artists: artists.diagnostic,
     songs: songs.diagnostic,
@@ -468,17 +524,103 @@ export async function loadAdminCatalog(): Promise<AdminCatalogLoadResult> {
   if (artists.diagnostic.ok && songs.diagnostic.ok) {
     return {
       ok: true,
-      artists: artists.data,
-      songs: songs.data,
+      artists: mappedArtists,
+      songs: mappedSongs,
       diagnostics,
     };
   }
 
   return {
     ok: false,
-    artists: artists.data,
-    songs: songs.data,
+    artists: mappedArtists,
+    songs: mappedSongs,
     diagnostics,
     message: `Backend returned an error: ${formatFailedEndpoints(diagnostics)}.`,
   };
+}
+
+export function createArtist(artist: Omit<BackendArtist, 'artistId'>) {
+  return fetchJson<BackendArtist>(API_ENDPOINTS.artists, 'POST', artist);
+}
+
+export function updateArtist(id: number, artist: BackendArtist) {
+  return fetchJson<void>(`${API_ENDPOINTS.artists}/${id}`, 'PUT', artist);
+}
+
+export function deleteArtist(id: number) {
+  return fetchJson<void>(`${API_ENDPOINTS.artists}/${id}`, 'DELETE');
+}
+
+export function createSong(song: Omit<BackendSong, 'songId'>) {
+  return fetchJson<BackendSong>(API_ENDPOINTS.songs, 'POST', song);
+}
+
+export function updateSong(id: number, song: BackendSong) {
+  return fetchJson<void>(`${API_ENDPOINTS.songs}/${id}`, 'PUT', song);
+}
+
+export function deleteSong(id: number) {
+  return fetchJson<void>(`${API_ENDPOINTS.songs}/${id}`, 'DELETE');
+}
+
+export type AuditAction = 'TOEVOEGEN' | 'BEWERKEN' | 'VERWIJDEREN' | 'SYSTEEM';
+export type AuditEntityType = 'NUMMER' | 'ARTIEST' | 'SYSTEEM';
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  action: AuditAction;
+  entityType: AuditEntityType;
+  name: string;
+  details: string;
+}
+
+export function fetchAuditLogs() {
+  return fetchJson<AuditLogEntry[]>('/api/audit-logs');
+}
+
+export function createAuditLog(log: Omit<AuditLogEntry, 'id' | 'timestamp'> & { id?: string; timestamp?: string }) {
+  return fetchJson<AuditLogEntry>('/api/audit-logs', 'POST', log);
+}
+
+export function clearAuditLogs() {
+  return fetchJson<void>('/api/audit-logs', 'DELETE');
+}
+
+export interface BackendUser {
+  userId: number;
+  username: string;
+  role: string;
+  createdAtUtc: string;
+}
+
+export interface RoleChangeRequest {
+  id: number;
+  targetUserId: number;
+  targetUsername: string;
+  newRole: string;
+  requestedBy: string;
+  createdAtUtc: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  approvedBy?: string;
+  approvedAtUtc?: string;
+}
+
+export function fetchUsers() {
+  return fetchJson<BackendUser[]>('/api/users');
+}
+
+export function fetchRoleRequests() {
+  return fetchJson<RoleChangeRequest[]>('/api/users/requests');
+}
+
+export function createRoleRequest(targetUserId: number, newRole: string) {
+  return fetchJson<RoleChangeRequest>('/api/users/request-role', 'POST', { targetUserId, newRole });
+}
+
+export function approveRoleRequest(id: number) {
+  return fetchJson<void>(`/api/users/approve-role/${id}`, 'POST');
+}
+
+export function rejectRoleRequest(id: number) {
+  return fetchJson<void>(`/api/users/reject-role/${id}`, 'POST');
 }
