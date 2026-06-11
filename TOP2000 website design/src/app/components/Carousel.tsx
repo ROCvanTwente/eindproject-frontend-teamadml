@@ -88,9 +88,9 @@ export function Carousel() {
     slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 5000,
-    pauseOnHover: true,
-    arrows: false, // Hide default arrows to use custom ones
+      autoplaySpeed: 5000,
+      pauseOnHover: false,
+    arrows: false,
     fade: true,
   };
 
