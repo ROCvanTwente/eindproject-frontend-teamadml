@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import { Layout } from './components/Layout';
 import { HomePage } from './pages/HomePage';
 import { ListPage } from './pages/ListPage';
@@ -29,6 +30,27 @@ const BACKEND_ENDPOINTS = [
   { label: 'GET /api/songs', url: '/api/songs' },
   { label: 'GET /api/top2000', url: '/api/top2000' },
 ];
+
+const AdminRoute = () => {
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
+
+  try {
+    const decoded: any = jwtDecode(token);
+    const role = decoded.role || decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+
+    if (role !== 'Admin') {
+      return <Navigate to="/" replace />;
+    }
+    
+    return <Outlet />;
+  } catch (error) {
+    return <Navigate to="/" replace />;
+  }
+};
 
 export default function App() {
   return (

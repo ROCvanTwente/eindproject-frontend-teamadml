@@ -28,16 +28,15 @@ export function LoginPage() {
       if (response.ok) {
         const data = await response.json();
 
-        // Save auth data
+        // Sla alle benodigde gegevens op!
         localStorage.setItem('token', data.token);
         localStorage.setItem('username', data.username);
-        localStorage.setItem('role', data.role);
+        localStorage.setItem('role', data.role); // <--- Dit zorgt voor de Admin check!
 
-        // Redirect to homepage to refresh layout context
+        // Stuur terug naar de homepagina zodat de layout herlaadt
         window.location.href = "/"; 
       } else {
-        const errData = await response.json().catch(() => ({}));
-        setErrorMessage(errData.message || 'Verkeerde gebruikersnaam of wachtwoord ingevuld.');
+        setErrorMessage('Verkeerde gebruikersnaam of wachtwoord ingevuld.');
       }
     } catch (error) {
       console.error("Fout bij inloggen:", error);
@@ -61,6 +60,7 @@ export function LoginPage() {
         <div className="max-w-md mx-auto">
           <div className="bg-card border border-border rounded-lg p-8 shadow-md">
             
+            {/* Foutmelding tonen als het inloggen mislukt */}
             {/* Display error message */}
             {errorMessage && (
               <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
