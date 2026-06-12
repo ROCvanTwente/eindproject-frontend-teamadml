@@ -62,6 +62,7 @@ export default function App() {
     >
       <Routes>
         <Route path="/" element={<Layout />}>
+          {/* VRIJE TOEGANG VOOR IEDEREEN */}
           <Route index element={<HomePage />} />
           <Route path="lijst" element={<ListPage />} />
           <Route path="artiesten" element={<ArtistsPage />} />
@@ -80,13 +81,18 @@ export default function App() {
           <Route path="playlists" element={<PlaylistsPage />} />
           <Route path="playlists/new" element={<CreatePlaylistPage />} />
           <Route path="playlist/:id" element={<PlaylistDetailPage />} />
-          <Route path="admin" element={<AdminPanel />} />
-          <Route path="admin/artiesten" element={<AdminPanel />} />
-          <Route path="admin/nummers" element={<AdminPanel />} />
-          <Route path="admin/logboek" element={<AdminPanel />} />
-          <Route path="admin/gebruikers" element={<AdminPanel />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+
+          {/* 🔒 BEVEILIGDE ADMIN ROUTES */}
+          <Route element={<AdminRoute />}>
+            <Route path="admin" element={<AdminPanel />} />
+            <Route path="admin/artiesten" element={<AdminPanel />} />
+            <Route path="admin/nummers" element={<AdminPanel />} />
+            <Route path="admin/logboek" element={<AdminPanel />} />
+            <Route path="admin/gebruikers" element={<AdminPanel />} />
+          </Route>
+          
         </Route>
       </Routes>
       <Toaster />
