@@ -40,8 +40,7 @@ export function RegisterPage() {
           window.location.href = '/login';
         }, 2000);
       } else {
-        const errData = await response.json().catch(() => ({}));
-        setErrorMessage(errData.message || 'Er ging iets mis. Bestaat deze gebruikersnaam misschien al?');
+        setErrorMessage('Er ging iets mis. Bestaat deze gebruikersnaam misschien al?');
       }
     } catch (error) {
       console.error("Fout bij registreren:", error);
@@ -65,6 +64,7 @@ export function RegisterPage() {
         <div className="max-w-md mx-auto">
           <div className="bg-card border border-border rounded-lg p-8 shadow-md">
             
+            {/* Meldingen tonen */}
             {/* Display status messages */}
             {errorMessage && (
               <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
