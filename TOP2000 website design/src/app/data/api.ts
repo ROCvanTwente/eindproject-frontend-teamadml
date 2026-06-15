@@ -427,3 +427,23 @@ export function approveRoleRequest(id: number) {
 export function rejectRoleRequest(id: number) {
   return fetchJson<void>(`/api/users/reject-role/${id}`, 'POST');
 }
+
+export interface VoteResultEntry {
+  songId: number;
+  title: string;
+  artistName: string;
+  imgUrl?: string;
+  voteCount: number;
+}
+
+export function fetchMyVotes() {
+  return fetchJson<number[]>('/api/votes/my-votes');
+}
+
+export function submitVotes(songIds: number[]) {
+  return fetchJson<{ message: string }>('/api/votes', 'POST', songIds);
+}
+
+export function fetchVoteResults() {
+  return fetchJson<VoteResultEntry[]>('/api/votes/results');
+}

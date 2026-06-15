@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, Loader2, Search, Users } from 'lucide-react';
 import { loadArtistsCatalog, type ApiEndpointDiagnostic, type BackendArtist } from '../data/api';
@@ -16,6 +16,7 @@ export function ArtistsPage() {
     ok: false,
     detail: 'Nog geen request uitgevoerd.',
   });
+  const [visibleCount, setVisibleCount] = useState(24);
   const [loadedAt, setLoadedAt] = useState<string>();
 
   useEffect(() => {
@@ -51,11 +52,13 @@ export function ArtistsPage() {
     };
   }, []);
 
-  const filteredArtists = [...artists]
-    .filter(artist =>
-      artist.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const filteredArtists = useMemo(() => {
+    return artists
+      .filter(artist =>
+        artist.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [artists, searchTerm]);
 
   return (
     <div className="pb-12">
@@ -95,7 +98,10 @@ export function ArtistsPage() {
               type="text"
               placeholder="Zoek een artiest..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setVisibleCount(24);
+              }}
               className="w-full pl-12 pr-4 py-3 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
             />
           </div>
@@ -108,7 +114,7 @@ export function ArtistsPage() {
 
         {/* Artists Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-          {filteredArtists.map(artist => (
+          {filteredArtists.slice(0, visibleCount).map(artist => (
             <div
               key={artist.artistId}
               className="bg-card border border-border overflow-hidden hover:shadow-md transition-all group"
@@ -148,6 +154,18 @@ export function ArtistsPage() {
             </div>
           ))}
         </div>
+
+        {/* Load More */}
+        {visibleCount < filteredArtists.length && (
+          <div className="text-center mt-8">
+            <button
+              onClick={() => setVisibleCount(prev => prev + 24)}
+              className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer font-semibold"
+            >
+              Laad meer artiesten
+            </button>
+          </div>
+        )}
 
         {filteredArtists.length === 0 && (
           <div className="text-center py-16">

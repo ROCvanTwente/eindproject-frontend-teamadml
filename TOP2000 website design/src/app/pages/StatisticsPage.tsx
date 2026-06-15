@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Award, Star, Users, Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Award, Star, Users, Loader2, ThumbsUp, Music } from 'lucide-react';
+import { fetchVoteResults, type VoteResultEntry } from '../data/api';
 
-type StatType = 'stijgers' | 'dalers' | 'newcomers' | 'disappeared' | 'all-editions' | 'top-artists';
+type StatType = 'stijgers' | 'dalers' | 'newcomers' | 'disappeared' | 'all-editions' | 'top-artists' | 'voting-results';
 
 interface StijgerDto { songId: number; title: string; artistName: string; currentPosition: number; previousPosition: number; change: number; }
 interface DalerDto { songId: number; title: string; artistName: string; currentPosition: number; previousPosition: number; change: number; }
@@ -20,6 +21,7 @@ export function StatisticsPage() {
   const [allEditionsData, setAllEditionsData] = useState<InAlleEditiesDto[]>([]);
   const [verdwenenData, setVerdwenenData] = useState<VerdwenenNummerDto[]>([]);
   const [topArtiestenData, setTopArtiestenData] = useState<TopArtiestDto[]>([]);
+  const [votingResultsData, setVotingResultsData] = useState<VoteResultEntry[]>([]);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +68,19 @@ export function StatisticsPage() {
         .then(data => { setTopArtiestenData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setTopArtiestenData([]); setIsLoading(false); });
     }
+    else if (selectedStat === 'voting-results') {
+      fetchVoteResults()
+        .then(res => {
+          if (!res.ok) throw new Error(res.message ?? 'Geen stemresultaten gevonden');
+          setVotingResultsData(res.data);
+          setIsLoading(false);
+        })
+        .catch(err => {
+          setError(err.message);
+          setVotingResultsData([]);
+          setIsLoading(false);
+        });
+    }
     else {
       setIsLoading(false);
     }
@@ -77,7 +92,8 @@ export function StatisticsPage() {
     { id: 'newcomers', label: 'Nieuwkomers', icon: Star, requiresYear: true },
     { id: 'all-editions', label: 'In alle edities', icon: Award, requiresYear: true },
     { id: 'disappeared', label: 'Verdwenen nummers', icon: TrendingDown, requiresYear: true },
-    { id: 'top-artists', label: 'Top artiesten', icon: Users, requiresYear: true }
+    { id: 'top-artists', label: 'Top artiesten', icon: Users, requiresYear: true },
+    { id: 'voting-results', label: 'Tussenstand Stemmen', icon: ThumbsUp, requiresYear: false }
   ] as const;
 
   const currentStatOption = statOptions.find(opt => opt.id === selectedStat);
@@ -295,6 +311,58 @@ export function StatisticsPage() {
                   </table>
                 </div>
               ) : (!isLoading && !error && <p className="text-muted-foreground">Geen data gevonden.</p>)}
+            </div>
+          )}
+
+          {selectedStat === 'voting-results' && (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <ThumbsUp className="w-6 h-6 text-primary" /> Live Tussenstand TOP 2000 Stemming
+              </h2>
+              {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Laden...</span></div>}
+              {!isLoading && error && <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">{error}</div>}
+              {!isLoading && !error && votingResultsData.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-secondary">
+                      <tr>
+                        <th className="px-4 py-3">Plek</th>
+                        <th className="px-4 py-3">Cover</th>
+                        <th className="px-4 py-3">Nummer</th>
+                        <th className="px-4 py-3">Artiest</th>
+                        <th className="px-4 py-3">Aantal Stemmen</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {votingResultsData.map((result, index) => (
+                        <tr key={result.songId} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
+                          <td className="px-4 py-3 font-extrabold text-primary text-lg">#{index + 1}</td>
+                          <td className="px-4 py-2">
+                            {result.imgUrl ? (
+                              <img
+                                src={result.imgUrl}
+                                alt={result.title}
+                                className="w-12 h-12 rounded-lg object-cover shadow-sm"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                                <Music className="w-6 h-6 text-muted-foreground" />
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 font-bold">{result.title}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{result.artistName}</td>
+                          <td className="px-4 py-3 font-semibold text-white">
+                            <span className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary px-3 py-1 rounded-full text-sm">
+                              {result.voteCount} stemmen
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (!isLoading && !error && <p className="text-muted-foreground text-center py-6">Er zijn nog geen stemmen uitgebracht.</p>)}
             </div>
           )}
 

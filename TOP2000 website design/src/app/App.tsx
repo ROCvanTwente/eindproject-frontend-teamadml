@@ -6,7 +6,6 @@ import { HomePage } from './pages/HomePage';
 import { ListPage } from './pages/ListPage';
 import { NewsPage } from './pages/NewsPage';
 import { HistoryPage } from './pages/HistoryPage';
-import { ProgramPage } from './pages/ProgramPage';
 import { FAQPage } from './pages/FAQPage';
 import { ContactPage } from './pages/ContactPage';
 import { VotingPage } from './pages/VotingPage';
@@ -23,6 +22,8 @@ import { CreatePlaylistPage } from './pages/CreatePlaylistPage';
 import { PlaylistDetailPage } from './pages/PlaylistDetailPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { SettingsProvider } from './context/SettingsContext';
 import { Toaster } from './components/ui/sonner';
 
 const BACKEND_ENDPOINTS = [
@@ -33,7 +34,7 @@ const BACKEND_ENDPOINTS = [
 
 const AdminRoute = () => {
   const token = localStorage.getItem('token');
-  
+
   if (!token) {
     return <Navigate to="/" replace />;
   }
@@ -45,7 +46,7 @@ const AdminRoute = () => {
     if (role !== 'Admin') {
       return <Navigate to="/" replace />;
     }
-    
+
     return <Outlet />;
   } catch (error) {
     return <Navigate to="/" replace />;
@@ -54,12 +55,13 @@ const AdminRoute = () => {
 
 export default function App() {
   return (
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
+    <SettingsProvider>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
       <Routes>
         <Route path="/" element={<Layout />}>
           {/* VRIJE TOEGANG VOOR IEDEREEN */}
@@ -71,13 +73,14 @@ export default function App() {
           <Route path="nummer/:id" element={<SongDetailPage />} />
           <Route path="nieuws" element={<NewsPage />} />
           <Route path="geschiedenis" element={<HistoryPage />} />
-          <Route path="programma" element={<ProgramPage />} />
           <Route path="stemmen" element={<VotingPage />} />
           <Route path="faq" element={<FAQPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="statistieken" element={<StatisticsPage />} />
           <Route path="privacy" element={<PrivacyPage />} />
           <Route path="voorwaarden" element={<TermsPage />} />
+          <Route path="instellingen" element={<SettingsPage />} />
+          <Route path="settings" element={<Navigate to="/instellingen" replace />} />
           <Route path="playlists" element={<PlaylistsPage />} />
           <Route path="playlists/new" element={<CreatePlaylistPage />} />
           <Route path="playlist/:id" element={<PlaylistDetailPage />} />
@@ -92,10 +95,11 @@ export default function App() {
             <Route path="admin/logboek" element={<AdminPanel />} />
             <Route path="admin/gebruikers" element={<AdminPanel />} />
           </Route>
-          
+
         </Route>
       </Routes>
       <Toaster />
     </BrowserRouter>
+    </SettingsProvider>
   );
 }

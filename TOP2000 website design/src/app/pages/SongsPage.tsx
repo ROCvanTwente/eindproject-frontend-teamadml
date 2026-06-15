@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, Loader2, Music, Search } from 'lucide-react';
 import { loadSongsCatalog, type ApiEndpointDiagnostic, type BackendSong } from '../data/api';
@@ -17,6 +17,7 @@ export function SongsPage() {
     detail: 'Nog geen request uitgevoerd.',
   });
   const [loadedAt, setLoadedAt] = useState<string>();
+  const [visibleCount, setVisibleCount] = useState(30);
 
   useEffect(() => {
     let isMounted = true;
@@ -51,12 +52,14 @@ export function SongsPage() {
     };
   }, []);
 
-  const filteredSongs = [...songs]
-    .filter(song =>
-      song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (song.artistName ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => a.title.localeCompare(b.title));
+  const filteredSongs = useMemo(() => {
+    return songs
+      .filter(song =>
+        song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (song.artistName ?? '').toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [songs, searchTerm]);
 
   return (
     <div className="pb-12">
@@ -96,7 +99,10 @@ export function SongsPage() {
               type="text"
               placeholder="Zoek op titel of artiest..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setVisibleCount(30);
+              }}
               className="w-full pl-12 pr-4 py-3 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
             />
           </div>
@@ -109,7 +115,7 @@ export function SongsPage() {
 
         {/* Songs List */}
         <div className="max-w-4xl mx-auto space-y-3">
-          {filteredSongs.map(song => (
+          {filteredSongs.slice(0, visibleCount).map(song => (
             <Link
               key={song.songId}
               to={`/nummer/${song.songId}`}
@@ -144,6 +150,18 @@ export function SongsPage() {
             </Link>
           ))}
         </div>
+
+        {/* Load More */}
+        {visibleCount < filteredSongs.length && (
+          <div className="text-center mt-8">
+            <button
+              onClick={() => setVisibleCount(prev => prev + 30)}
+              className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"
+            >
+              Laad meer nummers
+            </button>
+          </div>
+        )}
 
         {filteredSongs.length === 0 && (
           <div className="text-center py-16">

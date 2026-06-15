@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, ChevronDown, Play, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 import { fetchTop2000Years, loadTop2000ByYear, type BackendTop2000Entry } from '../data/api';
 
@@ -105,36 +105,45 @@ export function ListPage() {
     };
   }, [selectedYear]);
 
-  // Compute filtered list and shifts
-  const filteredSongs = entries.map(entry => {
-    const prevPos = previousEntriesMap.get(entry.songId);
-    let change: number | 'new' | 0 = 0;
-    if (prevPos === undefined) {
-      change = 'new';
-    } else {
-      change = prevPos - entry.position;
-    }
-    return {
-      position: entry.position,
-      title: entry.song.title,
-      artist: entry.song.artistName || entry.song.artist?.name || 'Onbekende artiest',
-      year: entry.song.releaseYear || 0,
-      change
-    };
-  }).filter(song => {
-    const matchesSearch =
-      song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      song.artist.toLowerCase().includes(searchTerm.toLowerCase());
+  // Compute filtered list first without allocating unnecessary mapped objects (optimizes CPU/GC lag)
+  const filteredRawEntries = useMemo(() => {
+    return entries.filter(entry => {
+      const title = entry.song.title;
+      const artist = entry.song.artistName || entry.song.artist?.name || 'Onbekende artiest';
+      const matchesSearch =
+        title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        artist.toLowerCase().includes(searchTerm.toLowerCase());
 
-    if (!matchesSearch) return false;
+      if (!matchesSearch) return false;
 
-    if (positionFilter === 'all') return true;
-    if (positionFilter === 'top10') return song.position <= 10;
-    if (positionFilter === 'top100') return song.position <= 100;
-    if (positionFilter === 'top500') return song.position <= 500;
+      if (positionFilter === 'all') return true;
+      if (positionFilter === 'top10') return entry.position <= 10;
+      if (positionFilter === 'top100') return entry.position <= 100;
+      if (positionFilter === 'top500') return entry.position <= 500;
 
-    return true;
-  });
+      return true;
+    });
+  }, [entries, searchTerm, positionFilter]);
+
+  // Only map the visible subset of entries (reduces memory from 2000 items to 20 on render)
+  const visibleSongs = useMemo(() => {
+    return filteredRawEntries.slice(0, visibleCount).map(entry => {
+      const prevPos = previousEntriesMap.get(entry.songId);
+      let change: number | 'new' | 0 = 0;
+      if (prevPos === undefined) {
+        change = 'new';
+      } else {
+        change = prevPos - entry.position;
+      }
+      return {
+        position: entry.position,
+        title: entry.song.title,
+        artist: entry.song.artistName || entry.song.artist?.name || 'Onbekende artiest',
+        year: entry.song.releaseYear || 0,
+        change
+      };
+    });
+  }, [filteredRawEntries, visibleCount, previousEntriesMap]);
 
   return (
     <div className="pb-12">
@@ -215,7 +224,7 @@ export function ListPage() {
 
         {/* Results Summary */}
         <div className="mb-4 text-muted-foreground">
-          {loading ? 'Laden...' : `${filteredSongs.length} ${filteredSongs.length === 1 ? 'nummer' : 'nummers'} gevonden`}
+          {loading ? 'Laden...' : `${filteredRawEntries.length} ${filteredRawEntries.length === 1 ? 'nummer' : 'nummers'} gevonden`}
         </div>
 
         {/* Loading / Error States */}
@@ -243,7 +252,7 @@ export function ListPage() {
         ) : (
           /* Songs List */
           <div className="space-y-2">
-            {filteredSongs.slice(0, visibleCount).map((song, index) => (
+            {visibleSongs.map((song, index) => (
               <div
                 key={index}
                 className="bg-card border border-border p-4 hover:shadow-sm transition-all"
@@ -292,7 +301,7 @@ export function ListPage() {
             ))}
 
             {/* Load More */}
-            {visibleCount < filteredSongs.length && (
+            {visibleCount < filteredRawEntries.length && (
               <div className="text-center mt-8">
                 <button
                   onClick={() => setVisibleCount(prev => prev + 20)}
@@ -303,7 +312,7 @@ export function ListPage() {
               </div>
             )}
 
-            {filteredSongs.length === 0 && (
+            {filteredRawEntries.length === 0 && (
               <div className="text-center py-16">
                 <h3 className="text-xl font-semibold mb-2">Geen nummers gevonden</h3>
                 <p className="text-muted-foreground">Probeer een andere filter of zoekterm</p>

@@ -440,7 +440,7 @@ export function AdminPanel() {
 							<h3 className="text-lg font-bold text-destructive">Synchronisatiefout</h3>
 							<p className="text-sm text-muted-foreground mt-1">{errorMessage}</p>
 							<p className="text-xs text-muted-foreground/80 mt-2">
-								Controleer of de dotnet backend service correct is opgestart op http://localhost:5229.
+								Controleer of de dotnet backend service correct is opgestart op https://top2000teamadml.runasp.net.
 							</p>
 						</div>
 					</div>
