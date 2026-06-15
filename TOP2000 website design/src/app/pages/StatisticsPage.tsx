@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Award, Star, Users, Loader2 } from 'lucide-react';
 
-type StatType = 'stijgers' | 'dalers' | 'newcomers' | 'disappeared' | 'all-editions' | 'top-artists';
+type StatType = 'stijgers' | 'dalers' | 'newcomers' | 'disappeared' | 'all-editions' | 'top-artists' | 'artists-all-editions';
 
 interface StijgerDto { songId: number; title: string; artistName: string; currentPosition: number; previousPosition: number; change: number; }
 interface DalerDto { songId: number; title: string; artistName: string; currentPosition: number; previousPosition: number; change: number; }
@@ -9,6 +9,7 @@ interface NieuwkomerDto { songId: number; title: string; artistName: string; pos
 interface InAlleEditiesDto { songId: number; title: string; artistName: string; position: number; }
 interface VerdwenenNummerDto { songId: number; title: string; artistName: string; previousPosition: number; }
 interface TopArtiestDto { artistName: string; songCount: number; }
+interface ArtiestInAlleEditiesDto { artistName: string; songCount: number; }
 
 export function StatisticsPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2024);
@@ -20,7 +21,8 @@ export function StatisticsPage() {
   const [allEditionsData, setAllEditionsData] = useState<InAlleEditiesDto[]>([]);
   const [verdwenenData, setVerdwenenData] = useState<VerdwenenNummerDto[]>([]);
   const [topArtiestenData, setTopArtiestenData] = useState<TopArtiestDto[]>([]);
-
+  const [artiestenInAlleEditiesData, setArtiestenInAlleEditiesData] = useState<ArtiestInAlleEditiesDto[]>([]);
+  
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,40 +33,46 @@ export function StatisticsPage() {
     setError(null);
 
     if (selectedStat === 'stijgers') {
-      fetch(`/api/top2000/statistics/stijgers/${selectedYear}`)
+      fetch(`http://localhost:5174/api/top2000/statistics/stijgers/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Geen stijgers gevonden'); return res.json(); })
         .then(data => { setStijgersData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setStijgersData([]); setIsLoading(false); });
-    }
+    } 
     else if (selectedStat === 'dalers') {
-      fetch(`/api/top2000/statistics/dalers/${selectedYear}`)
+      fetch(`http://localhost:5174/api/top2000/statistics/dalers/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Geen dalers gevonden'); return res.json(); })
         .then(data => { setDalersData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setDalersData([]); setIsLoading(false); });
     }
     else if (selectedStat === 'newcomers') {
-      fetch(`/api/top2000/statistics/nieuwkomers/${selectedYear}`)
+      fetch(`http://localhost:5174/api/top2000/statistics/nieuwkomers/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Geen nieuwkomers gevonden'); return res.json(); })
         .then(data => { setNieuwkomersData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setNieuwkomersData([]); setIsLoading(false); });
     }
     else if (selectedStat === 'all-editions') {
-      fetch(`/api/top2000/statistics/in-alle-edities/${selectedYear}`)
+      fetch(`http://localhost:5174/api/top2000/statistics/in-alle-edities/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Data ophalen mislukt'); return res.json(); })
         .then(data => { setAllEditionsData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setAllEditionsData([]); setIsLoading(false); });
     }
     else if (selectedStat === 'disappeared') {
-      fetch(`/api/top2000/statistics/verdwenen-nummers/${selectedYear}`)
+      fetch(`http://localhost:5174/api/top2000/statistics/verdwenen-nummers/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Geen verdwenen nummers gevonden'); return res.json(); })
         .then(data => { setVerdwenenData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setVerdwenenData([]); setIsLoading(false); });
     }
     else if (selectedStat === 'top-artists') {
-      fetch(`/api/top2000/statistics/top-artiesten/${selectedYear}`)
+      fetch(`http://localhost:5174/api/top2000/statistics/top-artiesten/${selectedYear}`)
         .then(res => { if (!res.ok) throw new Error('Geen top artiesten gevonden'); return res.json(); })
         .then(data => { setTopArtiestenData(data); setIsLoading(false); })
         .catch(err => { setError(err.message); setTopArtiestenData([]); setIsLoading(false); });
+    }
+    else if (selectedStat === 'artists-all-editions') {
+      fetch(`http://localhost:5174/api/top2000/statistics/artiesten-in-alle-edities`)
+        .then(res => { if (!res.ok) throw new Error('Geen artiesten gevonden'); return res.json(); })
+        .then(data => { setArtiestenInAlleEditiesData(data); setIsLoading(false); })
+        .catch(err => { setError(err.message); setArtiestenInAlleEditiesData([]); setIsLoading(false); });
     }
     else {
       setIsLoading(false);
@@ -77,7 +85,8 @@ export function StatisticsPage() {
     { id: 'newcomers', label: 'Nieuwkomers', icon: Star, requiresYear: true },
     { id: 'all-editions', label: 'In alle edities', icon: Award, requiresYear: true },
     { id: 'disappeared', label: 'Verdwenen nummers', icon: TrendingDown, requiresYear: true },
-    { id: 'top-artists', label: 'Top artiesten', icon: Users, requiresYear: true }
+    { id: 'top-artists', label: 'Top artiesten', icon: Users, requiresYear: true },
+    { id: 'artists-all-editions', label: 'Artiesten in alle edities', icon: Users, requiresYear: false }
   ] as const;
 
   const currentStatOption = statOptions.find(opt => opt.id === selectedStat);
@@ -125,7 +134,7 @@ export function StatisticsPage() {
         </div>
 
         <div className="bg-card border border-border rounded-lg shadow-md overflow-hidden">
-
+          
           {selectedStat === 'stijgers' && (
             <div className="p-6">
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -285,6 +294,34 @@ export function StatisticsPage() {
                     </thead>
                     <tbody>
                       {topArtiestenData.map((artist, index) => (
+                        <tr key={artist.artistName} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
+                          <td className="px-4 py-3 font-semibold text-primary">{index + 1}</td>
+                          <td className="px-4 py-3 font-medium">{artist.artistName}</td>
+                          <td className="px-4 py-3">{artist.songCount} nummers</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (!isLoading && !error && <p className="text-muted-foreground">Geen data gevonden.</p>)}
+            </div>
+          )}
+
+          {selectedStat === 'artists-all-editions' && (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <Users className="w-6 h-6 text-primary" /> Artiesten die in elke editie staan
+              </h2>
+              {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Laden...</span></div>}
+              {!isLoading && error && <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">{error}</div>}
+              {!isLoading && !error && artiestenInAlleEditiesData.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-secondary">
+                      <tr><th className="px-4 py-3">Plek</th><th className="px-4 py-3">Artiest</th><th className="px-4 py-3">Unieke nummers in Top 2000</th></tr>
+                    </thead>
+                    <tbody>
+                      {artiestenInAlleEditiesData.map((artist, index) => (
                         <tr key={artist.artistName} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
                           <td className="px-4 py-3 font-semibold text-primary">{index + 1}</td>
                           <td className="px-4 py-3 font-medium">{artist.artistName}</td>

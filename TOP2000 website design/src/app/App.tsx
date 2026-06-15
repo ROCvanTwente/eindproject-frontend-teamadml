@@ -84,7 +84,6 @@ export default function App() {
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
 
-          {/* 🔒 BEVEILIGDE ADMIN ROUTES */}
           <Route element={<AdminRoute />}>
             <Route path="admin" element={<AdminPanel />} />
             <Route path="admin/artiesten" element={<AdminPanel />} />
