@@ -58,7 +58,6 @@ const AdminRoute = () => {
 
 export default function App() {
   return (
-<<<<<<< Updated upstream
     <SettingsProvider>
       <BrowserRouter
         future={{
@@ -66,67 +65,49 @@ export default function App() {
           v7_relativeSplatPath: true,
         }}
       >
-      <Routes>
-        <Route path="/" element={<Layout />}>
-=======
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <SpotifyProvider>
-        <SpotifyMiniPlayer />
-        <Routes>
-          {/* Spotify OAuth callback — outside of Layout so no nav is shown */}
-          <Route path="/spotify" element={<SpotifyCallbackPage />} />
+        <SpotifyProvider>
+          <SpotifyMiniPlayer />
+          <Routes>
+            {/* Spotify OAuth callback — outside of Layout so no nav is shown */}
+            <Route path="/spotify" element={<SpotifyCallbackPage />} />
 
-          <Route path="/" element={<Layout />}>
->>>>>>> Stashed changes
-          {/* VRIJE TOEGANG VOOR IEDEREEN */}
-          <Route index element={<HomePage />} />
-          <Route path="lijst" element={<ListPage />} />
-          <Route path="artiesten" element={<ArtistsPage />} />
-          <Route path="artiest/:id" element={<ArtistDetailPage />} />
-          <Route path="nummers" element={<SongsPage />} />
-          <Route path="nummer/:id" element={<SongDetailPage />} />
-          <Route path="nieuws" element={<NewsPage />} />
-          <Route path="geschiedenis" element={<HistoryPage />} />
-          <Route path="stemmen" element={<VotingPage />} />
-          <Route path="faq" element={<FAQPage />} />
-          <Route path="contact" element={<ContactPage />} />
-          <Route path="statistieken" element={<StatisticsPage />} />
-          <Route path="privacy" element={<PrivacyPage />} />
-          <Route path="voorwaarden" element={<TermsPage />} />
-          <Route path="instellingen" element={<SettingsPage />} />
-          <Route path="settings" element={<Navigate to="/instellingen" replace />} />
-          <Route path="playlists" element={<PlaylistsPage />} />
-          <Route path="playlists/new" element={<CreatePlaylistPage />} />
-          <Route path="playlist/:id" element={<PlaylistDetailPage />} />
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
+            <Route path="/" element={<Layout />}>
+              {/* VRIJE TOEGANG VOOR IEDEREEN */}
+              <Route index element={<HomePage />} />
+              <Route path="lijst" element={<ListPage />} />
+              <Route path="artiesten" element={<ArtistsPage />} />
+              <Route path="artiest/:id" element={<ArtistDetailPage />} />
+              <Route path="nummers" element={<SongsPage />} />
+              <Route path="nummer/:id" element={<SongDetailPage />} />
+              <Route path="nieuws" element={<NewsPage />} />
+              <Route path="geschiedenis" element={<HistoryPage />} />
+              <Route path="stemmen" element={<VotingPage />} />
+              <Route path="faq" element={<FAQPage />} />
+              <Route path="contact" element={<ContactPage />} />
+              <Route path="statistieken" element={<StatisticsPage />} />
+              <Route path="privacy" element={<PrivacyPage />} />
+              <Route path="voorwaarden" element={<TermsPage />} />
+              <Route path="instellingen" element={<SettingsPage />} />
+              <Route path="settings" element={<Navigate to="/instellingen" replace />} />
+              <Route path="playlists" element={<PlaylistsPage />} />
+              <Route path="playlists/new" element={<CreatePlaylistPage />} />
+              <Route path="playlist/:id" element={<PlaylistDetailPage />} />
+              <Route path="login" element={<LoginPage />} />
+              <Route path="register" element={<RegisterPage />} />
 
-          {/* 🔒 BEVEILIGDE ADMIN ROUTES */}
-          <Route element={<AdminRoute />}>
-            <Route path="admin" element={<AdminPanel />} />
-            <Route path="admin/artiesten" element={<AdminPanel />} />
-            <Route path="admin/nummers" element={<AdminPanel />} />
-            <Route path="admin/logboek" element={<AdminPanel />} />
-            <Route path="admin/gebruikers" element={<AdminPanel />} />
-          </Route>
-<<<<<<< Updated upstream
-
-        </Route>
-      </Routes>
-      <Toaster />
-=======
-          
-          </Route>
-        </Routes>
-        <Toaster />
-      </SpotifyProvider>
->>>>>>> Stashed changes
-    </BrowserRouter>
+              {/* 🔒 BEVEILIGDE ADMIN ROUTES */}
+              <Route element={<AdminRoute />}>
+                <Route path="admin" element={<AdminPanel />} />
+                <Route path="admin/artiesten" element={<AdminPanel />} />
+                <Route path="admin/nummers" element={<AdminPanel />} />
+                <Route path="admin/logboek" element={<AdminPanel />} />
+                <Route path="admin/gebruikers" element={<AdminPanel />} />
+              </Route>
+            </Route>
+          </Routes>
+          <Toaster />
+        </SpotifyProvider>
+      </BrowserRouter>
     </SettingsProvider>
   );
 }

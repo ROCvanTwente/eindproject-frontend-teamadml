@@ -20,18 +20,8 @@ export function SongsPage() {
   const [artists, setArtists] = useState<BackendArtist[]>([]);
   const [fetchState, setFetchState] = useState<FetchState>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-<<<<<<< Updated upstream
-  const [diagnostic, setDiagnostic] = useState<ApiEndpointDiagnostic>({
-    url: '/api/songs',
-    ok: false,
-    detail: 'Nog geen request uitgevoerd.',
-  });
-  const [loadedAt, setLoadedAt] = useState<string>();
-  const [visibleCount, setVisibleCount] = useState(30);
-=======
   const [pageSize, setPageSize] = useState<PageSize>(50);
   const [visibleCount, setVisibleCount] = useState(50);
->>>>>>> Stashed changes
 
   // Load songs + artists in parallel
   useEffect(() => {
@@ -56,16 +46,6 @@ export function SongsPage() {
     return () => { isMounted = false; };
   }, []);
 
-<<<<<<< Updated upstream
-  const filteredSongs = useMemo(() => {
-    return songs
-      .filter(song =>
-        song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (song.artistName ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .sort((a, b) => a.title.localeCompare(b.title));
-  }, [songs, searchTerm]);
-=======
   // Unique artist names for the dropdown (sorted A-Z)
   const artistOptions = useMemo(() => {
     const names = new Set<string>();
@@ -103,7 +83,6 @@ export function SongsPage() {
     setTitleSearch('');
     setArtistFilter('');
   };
->>>>>>> Stashed changes
 
   return (
     <div className="pb-12">
@@ -138,44 +117,6 @@ export function SongsPage() {
           </div>
         )}
 
-<<<<<<< Updated upstream
-        {/* Search */}
-        <div className="max-w-2xl mx-auto mb-8">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Zoek op titel of artiest..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setVisibleCount(30);
-              }}
-              className="w-full pl-12 pr-4 py-3 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
-            />
-          </div>
-        </div>
-
-        {/* Results Summary */}
-        <div className="mb-6 text-muted-foreground text-center">
-          {filteredSongs.length} {filteredSongs.length === 1 ? 'nummer' : 'nummers'} gevonden
-        </div>
-
-        {/* Songs List */}
-        <div className="max-w-4xl mx-auto space-y-3">
-          {filteredSongs.slice(0, visibleCount).map(song => (
-            <Link
-              key={song.songId}
-              to={`/nummer/${song.songId}`}
-              className="block bg-card border border-border p-4 hover:shadow-sm transition-all group"
-            >
-              <div className="flex items-center gap-4">
-                {song.albumCover ? (
-                  <img
-                    src={song.albumCover}
-                    alt={song.title}
-                    className="w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover flex-shrink-0"
-=======
         {fetchState === 'success' && (
           <>
             {/* Filter bar */}
@@ -191,7 +132,6 @@ export function SongsPage() {
                     value={titleSearch}
                     onChange={e => setTitleSearch(e.target.value)}
                     className="w-full pl-9 pr-9 py-2.5 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary text-sm"
->>>>>>> Stashed changes
                   />
                   {titleSearch && (
                     <button
@@ -219,29 +159,6 @@ export function SongsPage() {
                 </div>
               </div>
 
-<<<<<<< Updated upstream
-        {/* Load More */}
-        {visibleCount < filteredSongs.length && (
-          <div className="text-center mt-8">
-            <button
-              onClick={() => setVisibleCount(prev => prev + 30)}
-              className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"
-            >
-              Laad meer nummers
-            </button>
-          </div>
-        )}
-
-        {filteredSongs.length === 0 && (
-          <div className="text-center py-16">
-            <Music className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Geen nummers gevonden</h3>
-            <p className="text-muted-foreground">
-              Probeer een andere zoekterm
-            </p>
-          </div>
-        )}
-=======
               {/* Bottom row: page size + reset */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -262,7 +179,6 @@ export function SongsPage() {
                     ))}
                   </div>
                 </div>
->>>>>>> Stashed changes
 
                 {hasActiveFilter && (
                   <button

@@ -1,9 +1,4 @@
-<<<<<<< Updated upstream
 import { useState, useEffect, useMemo } from 'react';
-import { Search, ChevronDown, Play, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
-import { fetchTop2000Years, loadTop2000ByYear, type BackendTop2000Entry } from '../data/api';
-=======
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -33,8 +28,6 @@ import {
 } from '../data/api';
 import { PlayButton } from '../components/PlayButton';
 
->>>>>>> Stashed changes
-
 export function ListPage() {
   // ── Lijst state ────────────────────────────────────────────────────────────
   const [selectedYear, setSelectedYear] = useState('');
@@ -58,48 +51,47 @@ export function ListPage() {
   useEffect(() => {
     let isMounted = true;
 
-    const loadAll = async () => {
+    const loadInitial = async () => {
       try {
-        const [yearsRes, artistsRes, songsRes] = await Promise.all([
-          fetchTop2000Years(),
-          loadArtistsCatalog(),
-          loadSongsCatalog(),
-        ]);
+        const yearsRes = await fetchTop2000Years();
+        if (!yearsRes.ok || !yearsRes.data || yearsRes.data.length === 0) return;
 
-        if (!isMounted) return;
+        const sorted = [...yearsRes.data].sort((a, b) => b - a);
+        const displayYears = sorted.map(String);
 
-        // Years
-        if (yearsRes.ok && yearsRes.data && yearsRes.data.length > 0) {
-          const sortedYears = [...yearsRes.data].sort((a, b) => b - a).map(y => y.toString());
-          const displayYears: string[] = [];
-          if (!sortedYears.includes('2026')) displayYears.push('2026');
-          if (!sortedYears.includes('2025')) displayYears.push('2025');
-          displayYears.push(...sortedYears);
+        if (!displayYears.includes('2026')) displayYears.unshift('2026');
+        if (!displayYears.includes('2025')) displayYears.unshift('2025');
+
+        if (isMounted) {
           setYears(displayYears);
-          setSelectedYear('2026');
-
-          // Top 10 of the latest DB year
-          const latestDbYear = Math.max(...yearsRes.data);
-          const top10Res = await loadTop2000ByYear(latestDbYear);
-          if (isMounted && top10Res.ok && top10Res.data) {
-            setTop10([...top10Res.data].sort((a, b) => a.position - b.position).slice(0, 10));
-          }
+          const latestDb = Math.max(...yearsRes.data);
+          setSelectedYear(latestDb.toString());
         }
 
-        setArtists(artistsRes.data);
-        setSongs(songsRes.data);
-        setOverviewLoading(false);
+        setOverviewLoading(true);
+        const [artistsRes, songsRes, top10Res] = await Promise.all([
+          loadArtistsCatalog(),
+          loadSongsCatalog(),
+          loadTop2000ByYear(Math.max(...yearsRes.data)),
+        ]);
+
+        if (isMounted) {
+          if (artistsRes.ok) setArtists(artistsRes.data);
+          if (songsRes.ok) setSongs(songsRes.data);
+          if (top10Res.ok) setTop10(top10Res.data.slice(0, 10));
+          setOverviewLoading(false);
+        }
       } catch (err) {
-        console.error('Failed to load overview:', err);
+        console.error('Failed to load initial overview details:', err);
         if (isMounted) setOverviewLoading(false);
       }
     };
 
-    void loadAll();
+    void loadInitial();
     return () => { isMounted = false; };
   }, []);
 
-  // ── Fetch entries for selected year ───────────────────────────────────────
+  // ── Fetch entries for selected list year ───────────────────────────────────
   useEffect(() => {
     if (!selectedYear) return;
     let isMounted = true;
@@ -117,6 +109,7 @@ export function ListPage() {
 
         let queryYear = yearInt;
         let showNotice = '';
+
         if (yearInt > dbLatestYear) {
           queryYear = dbLatestYear;
           showNotice = `Editie ${selectedYear} is nog niet gestart. We tonen de meest recente lijst van ${dbLatestYear}.`;
@@ -127,11 +120,15 @@ export function ListPage() {
           loadTop2000ByYear(queryYear - 1),
         ]);
 
-        if (!currentRes.ok) throw new Error(currentRes.message || 'Kon de Top 2000 lijst niet ophalen.');
+        if (!currentRes.ok) {
+          throw new Error(currentRes.message || 'Kon de muzieklijst niet ophalen.');
+        }
 
         const prevMap = new Map<number, number>();
         if (prevRes.ok && prevRes.data) {
-          prevRes.data.forEach(e => prevMap.set(e.songId, e.position));
+          prevRes.data.forEach(entry => {
+            prevMap.set(entry.songId, entry.position);
+          });
         }
 
         if (isMounted) {
@@ -141,7 +138,10 @@ export function ListPage() {
           setLoading(false);
         }
       } catch (err: any) {
-        if (isMounted) { setError(err.message || 'Fout bij het laden van data.'); setLoading(false); }
+        if (isMounted) {
+          setError(err.message || 'Fout bij het laden van data.');
+          setLoading(false);
+        }
       }
     };
 
@@ -149,47 +149,6 @@ export function ListPage() {
     return () => { isMounted = false; };
   }, [selectedYear]);
 
-<<<<<<< Updated upstream
-  // Compute filtered list first without allocating unnecessary mapped objects (optimizes CPU/GC lag)
-  const filteredRawEntries = useMemo(() => {
-    return entries.filter(entry => {
-      const title = entry.song.title;
-      const artist = entry.song.artistName || entry.song.artist?.name || 'Onbekende artiest';
-      const matchesSearch =
-        title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        artist.toLowerCase().includes(searchTerm.toLowerCase());
-
-      if (!matchesSearch) return false;
-
-      if (positionFilter === 'all') return true;
-      if (positionFilter === 'top10') return entry.position <= 10;
-      if (positionFilter === 'top100') return entry.position <= 100;
-      if (positionFilter === 'top500') return entry.position <= 500;
-
-      return true;
-    });
-  }, [entries, searchTerm, positionFilter]);
-
-  // Only map the visible subset of entries (reduces memory from 2000 items to 20 on render)
-  const visibleSongs = useMemo(() => {
-    return filteredRawEntries.slice(0, visibleCount).map(entry => {
-      const prevPos = previousEntriesMap.get(entry.songId);
-      let change: number | 'new' | 0 = 0;
-      if (prevPos === undefined) {
-        change = 'new';
-      } else {
-        change = prevPos - entry.position;
-      }
-      return {
-        position: entry.position,
-        title: entry.song.title,
-        artist: entry.song.artistName || entry.song.artist?.name || 'Onbekende artiest',
-        year: entry.song.releaseYear || 0,
-        change
-      };
-    });
-  }, [filteredRawEntries, visibleCount, previousEntriesMap]);
-=======
   // Adjust visibleCount based on position filter selection
   useEffect(() => {
     if (positionFilter === 'top10') {
@@ -207,32 +166,35 @@ export function ListPage() {
     }
   }, [positionFilter, entries]);
 
-  // ── Derived: filtered list ─────────────────────────────────────────────────
-  const filteredSongs = entries.map(entry => {
-    const prevPos = previousEntriesMap.get(entry.songId);
-    let change: number | 'new' | 0 = 0;
-    if (prevPos === undefined) change = 'new';
-    else change = prevPos - entry.position;
-    return {
-      position: entry.position,
-      title: entry.song.title,
-      artist: entry.song.artistName || entry.song.artist?.name || 'Onbekende artiest',
-      year: entry.song.releaseYear || 0,
-      change,
-    };
-  }).filter(song => {
-    const matchesSearch =
-      song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      song.artist.toLowerCase().includes(searchTerm.toLowerCase());
-    if (!matchesSearch) return false;
-    if (positionFilter === 'top10') return song.position <= 10;
-    if (positionFilter === 'top50') return song.position <= 50;
-    if (positionFilter === 'top100') return song.position <= 100;
-    if (positionFilter === 'top500') return song.position <= 500;
-    if (positionFilter === 'top2000') return song.position <= 2000;
-    return true;
-  });
->>>>>>> Stashed changes
+  // ── Derived: filtered list (optimized with useMemo to avoid lag) ───────────
+  const filteredSongs = useMemo(() => {
+    return entries
+      .map(entry => {
+        const prevPos = previousEntriesMap.get(entry.songId);
+        let change: number | 'new' | 0 = 0;
+        if (prevPos === undefined) change = 'new';
+        else change = prevPos - entry.position;
+        return {
+          position: entry.position,
+          title: entry.song.title,
+          artist: entry.song.artistName || entry.song.artist?.name || 'Onbekende artiest',
+          year: entry.song.releaseYear || 0,
+          change,
+        };
+      })
+      .filter(song => {
+        const matchesSearch =
+          song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          song.artist.toLowerCase().includes(searchTerm.toLowerCase());
+        if (!matchesSearch) return false;
+        if (positionFilter === 'top10') return song.position <= 10;
+        if (positionFilter === 'top50') return song.position <= 50;
+        if (positionFilter === 'top100') return song.position <= 100;
+        if (positionFilter === 'top500') return song.position <= 500;
+        if (positionFilter === 'top2000') return song.position <= 2000;
+        return true;
+      });
+  }, [entries, searchTerm, positionFilter, previousEntriesMap]);
 
   // ── Derived: top artists ───────────────────────────────────────────────────
   const artistSongCount: Record<number, { artist: BackendArtist; count: number }> = {};
@@ -298,46 +260,9 @@ export function ListPage() {
         {/* ── OVERVIEW SECTIE ─────────────────────────────────────────────── */}
         <div className="mb-12 space-y-8">
 
-<<<<<<< Updated upstream
-            {/* Search */}
-            <div>
-              <label className="block text-sm mb-2">Zoeken</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Zoek op titel of artiest..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Fallback year warning banner */}
-        {fallbackNotice && !loading && (
-          <div className="bg-primary/10 border border-primary/25 text-foreground px-4 py-3 rounded-lg mb-6 flex items-center gap-3 animate-fade-in">
-            <AlertCircle className="w-5 h-5 text-primary flex-shrink-0" />
-            <span className="text-sm font-medium">{fallbackNotice}</span>
-          </div>
-        )}
-
-        {/* Results Summary */}
-        <div className="mb-4 text-muted-foreground">
-          {loading ? 'Laden...' : `${filteredRawEntries.length} ${filteredRawEntries.length === 1 ? 'nummer' : 'nummers'} gevonden`}
-        </div>
-
-        {/* Loading / Error States */}
-        {loading ? (
-          <div className="space-y-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-=======
           {/* Stat cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {statCards.map(card => (
->>>>>>> Stashed changes
               <div
                 key={card.label}
                 className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${card.color} p-5 backdrop-blur-sm`}
@@ -351,30 +276,6 @@ export function ListPage() {
               </div>
             ))}
           </div>
-<<<<<<< Updated upstream
-        ) : error ? (
-          <div className="bg-destructive/5 border border-destructive/30 rounded-lg p-6 mb-8 text-center">
-            <AlertCircle className="w-10 h-10 text-destructive mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-destructive mb-1">Muzieklijst kon niet worden geladen</h3>
-            <p className="text-muted-foreground text-sm">{error}</p>
-          </div>
-        ) : (
-          /* Songs List */
-          <div className="space-y-2">
-            {visibleSongs.map((song, index) => (
-              <div
-                key={index}
-                className="bg-card border border-border p-4 hover:shadow-sm transition-all"
-              >
-                <div className="flex items-center gap-4">
-                  {/* Position */}
-                  <div className="flex-shrink-0 w-12 text-center">
-                    <div className={`text-2xl font-bold ${song.position <= 10 ? 'text-primary' : ''}`}>
-                      {song.position}
-                    </div>
-                  </div>
-=======
->>>>>>> Stashed changes
 
           {/* Top 10 + Top Artiesten */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -391,65 +292,64 @@ export function ListPage() {
                     <p className="text-xs text-muted-foreground">De allerbeste nummers</p>
                   </div>
                 </div>
-<<<<<<< Updated upstream
-              </div>
-            ))}
-
-            {/* Load More */}
-            {visibleCount < filteredRawEntries.length && (
-              <div className="text-center mt-8">
-=======
->>>>>>> Stashed changes
                 <button
-                  onClick={() => { setSelectedYear(latestYear); setPositionFilter('top10'); window.scrollTo({ top: document.getElementById('lijst-sectie')?.offsetTop ?? 600, behavior: 'smooth' }); }}
+                  onClick={() => {
+                    setSelectedYear(latestYear);
+                    setPositionFilter('top10');
+                    window.scrollTo({
+                      top: document.getElementById('lijst-sectie')?.offsetTop ?? 600,
+                      behavior: 'smooth',
+                    });
+                  }}
                   className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   Volledige lijst <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
 
-<<<<<<< Updated upstream
-            {filteredRawEntries.length === 0 && (
-              <div className="text-center py-16">
-                <h3 className="text-xl font-semibold mb-2">Geen nummers gevonden</h3>
-                <p className="text-muted-foreground">Probeer een andere filter of zoekterm</p>
-=======
               <div className="divide-y divide-border">
                 {overviewLoading ? (
                   <div className="flex items-center justify-center gap-3 py-10 text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" /> Laden…
                   </div>
-                ) : top10.map((entry, idx) => (
-                  <div key={entry.songId} className="flex items-center gap-3 px-5 py-3">
-                    <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
-                      ${idx === 0 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40' :
-                        idx === 1 ? 'bg-slate-400/20 text-slate-300 border border-slate-400/40' :
-                        idx === 2 ? 'bg-orange-700/20 text-orange-400 border border-orange-700/40' :
-                        'bg-muted text-muted-foreground'}`}
-                    >
-                      {entry.position}
-                    </div>
-                    {entry.song?.imgUrl || entry.song?.albumCover ? (
-                      <img
-                        src={entry.song.imgUrl ?? entry.song.albumCover}
-                        alt={entry.song.title}
-                        className="w-8 h-8 rounded object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                        <Music className="w-3 h-3 text-muted-foreground" />
+                ) : (
+                  top10.map((entry, idx) => (
+                    <div key={entry.songId} className="flex items-center gap-3 px-5 py-3">
+                      <div
+                        className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
+                        ${
+                          idx === 0
+                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40'
+                            : idx === 1
+                            ? 'bg-slate-400/20 text-slate-300 border border-slate-400/40'
+                            : idx === 2
+                            ? 'bg-orange-700/20 text-orange-400 border border-orange-700/40'
+                            : 'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {entry.position}
                       </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm truncate">{entry.song?.title ?? '–'}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {entry.song?.artistName ?? entry.song?.artist?.name ?? '–'}
-                      </p>
+                      {entry.song?.imgUrl || entry.song?.albumCover ? (
+                        <img
+                          src={entry.song.imgUrl ?? entry.song.albumCover}
+                          alt={entry.song.title}
+                          className="w-8 h-8 rounded object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                          <Music className="w-3 h-3 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm truncate">{entry.song?.title ?? '–'}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {entry.song?.artistName ?? entry.song?.artist?.name ?? '–'}
+                        </p>
+                      </div>
+                      {idx === 0 && <Star className="w-4 h-4 text-yellow-400 flex-shrink-0" />}
                     </div>
-                    {idx === 0 && <Star className="w-4 h-4 text-yellow-400 flex-shrink-0" />}
-                  </div>
-                ))}
->>>>>>> Stashed changes
+                  ))
+                )}
               </div>
             </div>
 
@@ -478,35 +378,50 @@ export function ListPage() {
                   <div className="flex items-center justify-center gap-3 py-8 text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" /> Laden…
                   </div>
-                ) : topArtists.map(({ artist, count }, idx) => {
-                  const maxCount = topArtists[0]?.count ?? 1;
-                  const pct = Math.round((count / maxCount) * 100);
-                  return (
-                    <Link key={artist.artistId} to={`/artiest/${artist.artistId}`} className="flex items-center gap-3 group">
-                      <div className="w-5 text-center text-xs font-bold text-muted-foreground flex-shrink-0">{idx + 1}</div>
-                      {artist.photoUrl || artist.photo ? (
-                        <img
-                          src={artist.photoUrl ?? artist.photo}
-                          alt={artist.name}
-                          className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-border group-hover:border-primary transition-colors"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0 border-2 border-border">
-                          <Users className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  topArtists.map(({ artist, count }, idx) => {
+                    const maxCount = topArtists[0]?.count ?? 1;
+                    const pct = Math.round((count / maxCount) * 100);
+                    return (
+                      <Link
+                        key={artist.artistId}
+                        to={`/artiest/${artist.artistId}`}
+                        className="flex items-center gap-3 group"
+                      >
+                        <div className="w-5 text-center text-xs font-bold text-muted-foreground flex-shrink-0">
+                          {idx + 1}
                         </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{artist.name}</span>
-                          <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">{count} nrs</span>
+                        {artist.photoUrl || artist.photo ? (
+                          <img
+                            src={artist.photoUrl ?? artist.photo}
+                            alt={artist.name}
+                            className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-border group-hover:border-primary transition-colors"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0 border-2 border-border">
+                            <Users className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                              {artist.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                              {count} nrs
+                            </span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-primary to-rose-400 transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                          <div className="h-full rounded-full bg-gradient-to-r from-primary to-rose-400 transition-all" style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
+                      </Link>
+                    );
+                  })
+                )}
               </div>
 
               {/* Extra stats onderaan */}
