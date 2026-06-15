@@ -34,6 +34,7 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    strictPort: true, // Error als 5174 al in gebruik is i.p.v. stil wisselen
     proxy: {
       '/api': {
         target: backendTarget,

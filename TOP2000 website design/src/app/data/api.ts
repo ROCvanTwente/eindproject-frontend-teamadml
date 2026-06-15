@@ -54,6 +54,7 @@ export type BackendArtist = {
   photo?: string; // added to match backend
   wikiUrl?: string;
   numberOfSongs?: number;
+  songs?: BackendSong[];
 };
 
 export type BackendSong = {
@@ -76,6 +77,12 @@ export type BackendTop2000Entry = {
   year: number;
   position: number;
   song: BackendSong;
+};
+
+export type SongRanking = {
+  songId: number;
+  year: number;
+  position: number;
 };
 
 export const API_ENDPOINTS = {
@@ -236,6 +243,97 @@ export function fetchArtists() {
 
 export function fetchSongs() {
   return fetchJson<BackendSong[]>(API_ENDPOINTS.songs);
+}
+
+export async function fetchArtistForDetail(id: number): Promise<ApiResult<BackendArtist>> {
+  const result = await fetchJson<BackendArtist & { wiki?: string }>(`${API_ENDPOINTS.artists}/${id}`);
+  if (result.ok && result.data) {
+    const data = result.data;
+    const mappedSongs = (data.songs || []).map(song => ({
+      ...song,
+      albumCover: song.albumCover ?? song.imgUrl,
+      imgUrl: song.imgUrl ?? song.albumCover,
+      lyricsPreview: song.lyricsPreview ?? song.lyrics,
+      lyrics: song.lyrics ?? song.lyricsPreview,
+      artistName: song.artistName ?? data.name,
+    }));
+    return {
+      ...result,
+      data: {
+        ...data,
+        bio: data.bio ?? data.biography,
+        biography: data.biography ?? data.bio,
+        photoUrl: data.photoUrl ?? data.photo,
+        photo: data.photo ?? data.photoUrl,
+        wikiUrl: data.wikiUrl ?? data.wiki,
+        songs: mappedSongs,
+      }
+    };
+  }
+  return result;
+}
+
+export async function fetchSongsByArtist(artistId: number, artistName?: string): Promise<BackendSong[]> {
+  const result = await fetchJson<BackendSong[]>(`${API_ENDPOINTS.songs}/by-artist/${artistId}`);
+  if (result.ok && result.data) {
+    return result.data.map(song => ({
+      ...song,
+      albumCover: song.albumCover ?? song.imgUrl,
+      imgUrl: song.imgUrl ?? song.albumCover,
+      lyricsPreview: song.lyricsPreview ?? song.lyrics,
+      lyrics: song.lyrics ?? song.lyricsPreview,
+      artistName: song.artistName ?? artistName,
+    }));
+  }
+  return [];
+}
+
+export async function fetchSongForDetail(id: number): Promise<ApiResult<BackendSong & { rankings?: SongRanking[] }>> {
+  const result = await fetchJson<BackendSong & { top2000Entries?: any[] }>(`${API_ENDPOINTS.songs}/${id}`);
+  if (result.ok && result.data) {
+    const data = result.data;
+    const rankings: SongRanking[] = (data.top2000Entries || []).map(entry => ({
+      songId: entry.songId,
+      year: entry.year,
+      position: entry.position
+    }));
+    return {
+      ...result,
+      data: {
+        ...data,
+        albumCover: data.albumCover ?? data.imgUrl,
+        imgUrl: data.imgUrl ?? data.albumCover,
+        lyricsPreview: data.lyricsPreview ?? data.lyrics,
+        lyrics: data.lyrics ?? data.lyricsPreview,
+        artistName: data.artistName ?? data.artist?.name,
+        rankings
+      }
+    };
+  }
+  return result as ApiResult<BackendSong & { rankings?: SongRanking[] }>;
+}
+
+export async function fetchSongRankings(songId: number): Promise<ApiResult<SongRanking[]>> {
+  const result = await fetchJson<BackendSong & { top2000Entries?: any[] }>(`${API_ENDPOINTS.songs}/${songId}`);
+  if (result.ok && result.data) {
+    const rankings: SongRanking[] = (result.data.top2000Entries || []).map(entry => ({
+      songId: entry.songId,
+      year: entry.year,
+      position: entry.position
+    }));
+    return {
+      ok: true,
+      url: result.url,
+      status: result.status,
+      data: rankings
+    };
+  }
+  return {
+    ok: false,
+    url: result.url,
+    status: result.status,
+    message: result.ok ? "Geen rankings gevonden." : (result as any).message
+  };
 }
 
 export function fetchTop2000Years() {

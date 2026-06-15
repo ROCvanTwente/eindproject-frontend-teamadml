@@ -25,6 +25,9 @@ import { TermsPage } from './pages/TermsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SettingsProvider } from './context/SettingsContext';
 import { Toaster } from './components/ui/sonner';
+import { SpotifyProvider } from './spotify/SpotifyContext';
+import { SpotifyMiniPlayer } from './components/SpotifyPlayer';
+import { SpotifyCallbackPage } from './pages/SpotifyCallbackPage';
 
 const BACKEND_ENDPOINTS = [
   { label: 'GET /api/artists', url: '/api/artists' },
@@ -55,6 +58,7 @@ const AdminRoute = () => {
 
 export default function App() {
   return (
+<<<<<<< Updated upstream
     <SettingsProvider>
       <BrowserRouter
         future={{
@@ -64,6 +68,21 @@ export default function App() {
       >
       <Routes>
         <Route path="/" element={<Layout />}>
+=======
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
+      <SpotifyProvider>
+        <SpotifyMiniPlayer />
+        <Routes>
+          {/* Spotify OAuth callback — outside of Layout so no nav is shown */}
+          <Route path="/spotify" element={<SpotifyCallbackPage />} />
+
+          <Route path="/" element={<Layout />}>
+>>>>>>> Stashed changes
           {/* VRIJE TOEGANG VOOR IEDEREEN */}
           <Route index element={<HomePage />} />
           <Route path="lijst" element={<ListPage />} />
@@ -95,10 +114,18 @@ export default function App() {
             <Route path="admin/logboek" element={<AdminPanel />} />
             <Route path="admin/gebruikers" element={<AdminPanel />} />
           </Route>
+<<<<<<< Updated upstream
 
         </Route>
       </Routes>
       <Toaster />
+=======
+          
+          </Route>
+        </Routes>
+        <Toaster />
+      </SpotifyProvider>
+>>>>>>> Stashed changes
     </BrowserRouter>
     </SettingsProvider>
   );
