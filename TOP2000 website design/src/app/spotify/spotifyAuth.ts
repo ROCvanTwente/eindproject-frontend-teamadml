@@ -1,7 +1,7 @@
 // ─── Spotify PKCE Auth helpers ────────────────────────────────────────────────
 // PKCE = Proof Key for Code Exchange — safe for SPAs (no client secret needed)
 
-export const SPOTIFY_CLIENT_ID = '76bd4aa5d0e4419a8b6f72d6cd7773c2';
+export const SPOTIFY_CLIENT_ID = 'c06806b27a6d490fafb1e0d4d4b104e5';
 
 // !! These URIs must be added EXACTLY as shown in the Spotify Dashboard under "Redirect URIs" !!
 // Localhost:  http://localhost:5174/spotify
@@ -15,7 +15,7 @@ const REDIRECT_MAP: Record<string, string> = {
 
 export const SPOTIFY_REDIRECT_URI: string =
   (typeof window !== 'undefined' && REDIRECT_MAP[window.location.origin])
-    ?? 'https://eindproject-frontend-teamadml.vercel.app/spotify';
+  ?? 'https://eindproject-frontend-teamadml.vercel.app/spotify';
 
 
 export const SPOTIFY_SCOPES = [
