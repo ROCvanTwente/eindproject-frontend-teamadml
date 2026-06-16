@@ -7,7 +7,9 @@ export const SPOTIFY_CLIENT_ID = '76bd4aa5d0e4419a8b6f72d6cd7773c2';
 // Localhost:  http://localhost:5174/spotify
 // Production: https://eindproject-frontend-teamadml.vercel.app/spotify
 const REDIRECT_MAP: Record<string, string> = {
+  'http://localhost:5173': 'http://localhost:5173/spotify',
   'http://localhost:5174': 'http://localhost:5174/spotify',
+  'http://localhost:5175': 'http://localhost:5175/spotify',
   'https://eindproject-frontend-teamadml.vercel.app': 'https://eindproject-frontend-teamadml.vercel.app/spotify',
 };
 
@@ -156,16 +158,63 @@ export interface SpotifyTrack {
   preview_url: string | null;
 }
 
-export async function searchTrack(title: string, artist: string): Promise<SpotifyTrack | null> {
-  const token = await getValidToken();
-  if (!token) return null;
+function sanitizeSearchQuery(title: string, artist: string) {
+  // 1. Clean Title
+  let cleanTitle = title
+    // Remove leading/trailing dots and ellipses (common in censored titles like ".. In Paris")
+    .replace(/^\.+/, '')
+    .trim();
 
-  const q = encodeURIComponent(`track:${title} artist:${artist}`);
-  const res = await fetch(`https://api.spotify.com/v1/search?q=${q}&type=track&limit=1`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  // Remove common parenthetical metadata like (Remastered 2011), (Live), (Radio Edit), etc.
+  cleanTitle = cleanTitle.replace(/\s*[\(\[][^)]*?(remaster|live|edit|mono|stereo|version|mix)[^)]*?[\)\]]/gi, '').trim();
 
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.tracks?.items?.[0] ?? null;
+  // 2. Clean Artist
+  // Take the first artist in case of collaborations (e.g. "Queen & David Bowie" -> "Queen")
+  let cleanArtist = artist;
+  const splitters = [/\s+&\s+/, /\s+feat\.?\s+/i, /\s+ft\.?\s+/i, /\s+vs\.?\s+/i, /\s+with\s+/i, /\s*,\s*/];
+  for (const splitter of splitters) {
+    if (splitter.test(cleanArtist)) {
+      cleanArtist = cleanArtist.split(splitter)[0].trim();
+      break;
+    }
+  }
+
+  return { cleanTitle, cleanArtist };
+}
+
+export async function searchTrack(title: string, artist: string, token: string): Promise<SpotifyTrack | null> {
+  const { cleanTitle, cleanArtist } = sanitizeSearchQuery(title, artist);
+
+  // Attempt 1: Strict field search
+  const strictQuery = encodeURIComponent(`track:${cleanTitle} artist:${cleanArtist}`);
+  try {
+    let res = await fetch(`https://api.spotify.com/v1/search?q=${strictQuery}&type=track&limit=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const track = data.tracks?.items?.[0];
+      if (track) return track;
+    }
+  } catch (err) {
+    console.error('Strict search failed:', err);
+  }
+
+  // Attempt 2: Fallback to fuzzy combined search
+  const fuzzyQuery = encodeURIComponent(`${cleanTitle} ${cleanArtist}`);
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/search?q=${fuzzyQuery}&type=track&limit=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return data.tracks?.items?.[0] ?? null;
+    }
+  } catch (err) {
+    console.error('Fuzzy fallback search failed:', err);
+  }
+
+  return null;
 }

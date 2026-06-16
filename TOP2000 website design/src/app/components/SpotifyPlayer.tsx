@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useSpotify } from '../spotify/SpotifyContext';
 import {
   Play, Pause, Volume2, VolumeX, X, Music, Loader2, ExternalLink, AlertTriangle,
@@ -109,7 +110,16 @@ export function SpotifyModal({ title, artist, onClose }: SpotifyModalProps) {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   };
 
-  // Trigger play on mount if not already playing this track
+  // Trigger play on mount or when player becomes ready
+  useEffect(() => {
+    if (spotify.isConnected && spotify.isReady) {
+      const isCurrent = track?.name.toLowerCase() === title.toLowerCase();
+      if (!isCurrent && !spotify.isLoading && !spotify.error) {
+        spotify.playTrack(title, artist);
+      }
+    }
+  }, [spotify.isConnected, spotify.isReady, title, artist, spotify.playTrack, track, spotify.isLoading, spotify.error]);
+
   const isCurrentTrack = track?.name.toLowerCase() === title.toLowerCase();
 
   return (

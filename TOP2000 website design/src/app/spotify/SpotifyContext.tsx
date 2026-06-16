@@ -170,14 +170,18 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
 
     patch({ isLoading: true, error: null });
 
-    const track = await searchTrack(title, artist);
+    const token = await getValidToken();
+    if (!token) {
+      patch({ isLoading: false, error: 'Spotify-sessie is verlopen. Log opnieuw in.', isConnected: false });
+      clearSpotifyTokens();
+      return;
+    }
+
+    const track = await searchTrack(title, artist, token);
     if (!track) {
       patch({ isLoading: false, error: `"${title}" kon niet worden gevonden op Spotify.` });
       return;
     }
-
-    const token = await getValidToken();
-    if (!token) { patch({ isLoading: false, error: 'Geen geldig Spotify token.' }); return; }
 
     const res = await fetch(
       `https://api.spotify.com/v1/me/player/play?device_id=${deviceIdRef.current}`,
