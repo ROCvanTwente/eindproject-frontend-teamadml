@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSpotify } from '../spotify/SpotifyContext';
 import {
   Play, Pause, Volume2, VolumeX, X, Music, Loader2, ExternalLink, AlertTriangle,
@@ -100,6 +100,7 @@ interface SpotifyModalProps {
 
 export function SpotifyModal({ title, artist, onClose }: SpotifyModalProps) {
   const spotify = useSpotify();
+  const hasInitiatedPlay = useRef(false);
 
   const track = spotify.currentTrack;
   const cover = track?.album.images[0]?.url;
@@ -113,12 +114,12 @@ export function SpotifyModal({ title, artist, onClose }: SpotifyModalProps) {
   // Trigger play on mount or when player becomes ready
   useEffect(() => {
     if (spotify.isConnected && spotify.isReady) {
-      const isCurrent = track?.name.toLowerCase() === title.toLowerCase();
-      if (!isCurrent && !spotify.isLoading && !spotify.error) {
+      if (!hasInitiatedPlay.current) {
+        hasInitiatedPlay.current = true;
         spotify.playTrack(title, artist);
       }
     }
-  }, [spotify.isConnected, spotify.isReady, title, artist, spotify.playTrack, track, spotify.isLoading, spotify.error]);
+  }, [spotify.isConnected, spotify.isReady, title, artist, spotify.playTrack]);
 
   const isCurrentTrack = track?.name.toLowerCase() === title.toLowerCase();
 
