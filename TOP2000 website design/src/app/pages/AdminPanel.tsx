@@ -375,16 +375,17 @@ export function AdminPanel() {
 			{/* Main Content Pane */}
 			<main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full space-y-8">
 				{/* Top bar header */}
-				<header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
-					<div>
-						<h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+				<header className="relative overflow-hidden p-6 md:p-8 rounded-2xl border border-zinc-800 bg-gradient-to-r from-red-900 via-red-655 to-red-900 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+					<div className="absolute inset-0 bg-black/15 pointer-events-none" />
+					<div className="relative z-10">
+						<h1 className="text-3xl md:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-100 to-zinc-300 leading-tight">
 							{currentTab === 'overview' && 'Dashboard Overzicht'}
 							{currentTab === 'artists' && 'Artiesten Database'}
 							{currentTab === 'songs' && 'Nummers Catalogus'}
 							{currentTab === 'audit-log' && 'Systeem & Activiteiten Logboek'}
 							{currentTab === 'accounts' && 'Gebruikers & Bevoegdheden'}
 						</h1>
-						<p className="text-muted-foreground text-sm mt-1">
+						<p className="text-red-100 text-sm mt-2">
 							{currentTab === 'overview' && 'Status, statistieken en overzicht van de TOP 2000 catalogus.'}
 							{currentTab === 'artists' && 'Beheer artiesten in de catalogus. Klik op een artiest voor detailweergave.'}
 							{currentTab === 'songs' && 'Volledige catalogus van nummers, gekoppelde artiesten en media.'}
@@ -393,11 +394,11 @@ export function AdminPanel() {
 						</p>
 					</div>
 
-					<div className="flex items-center gap-3">
+					<div className="flex items-center gap-3 relative z-10">
 						<button
 							onClick={() => void loadAdminData()}
 							disabled={fetchState === 'loading'}
-							className="inline-flex lg:hidden items-center justify-center p-3 rounded-xl border border-white/10 hover:bg-secondary transition-colors"
+							className="inline-flex lg:hidden items-center justify-center p-3 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 transition-colors text-white"
 							aria-label="Vernieuwen"
 						>
 							<RefreshCw className={`w-4 h-4 ${fetchState === 'loading' ? 'animate-spin' : ''}`} />
@@ -406,7 +407,7 @@ export function AdminPanel() {
 						{currentTab === 'artists' && (
 							<button
 								onClick={() => openAddArtistModalRef.current?.()}
-								className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/10 cursor-pointer"
+								className="bg-white hover:bg-white/90 text-red-900 px-5 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-black/10 cursor-pointer"
 							>
 								<Plus className="w-5 h-5" />
 								Artiest Toevoegen
@@ -416,7 +417,7 @@ export function AdminPanel() {
 						{currentTab === 'songs' && (
 							<button
 								onClick={() => openAddSongModalRef.current?.()}
-								className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/10 cursor-pointer"
+								className="bg-white hover:bg-white/90 text-red-900 px-5 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-black/10 cursor-pointer"
 							>
 								<Plus className="w-5 h-5" />
 								Nummer Toevoegen

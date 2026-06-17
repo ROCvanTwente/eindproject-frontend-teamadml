@@ -43,14 +43,17 @@ export function FAQPage() {
   return (
     <div className="pb-16 text-white">
       {/* Page Header */}
-      <section className="border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.15),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.04),_rgba(255,255,255,0))] py-12">
-        <div className="container mx-auto px-4 text-center max-w-3xl">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 mb-3">
+      <section className="relative overflow-hidden py-12 border-b border-zinc-800 bg-gradient-to-r from-red-900 via-red-655 to-red-900 text-white text-center">
+        <div className="absolute inset-0 bg-black/15 pointer-events-none" />
+        <div className="container mx-auto px-4 relative z-10 max-w-3xl">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-red-200 bg-white/10 border border-white/20 mb-3">
             <HelpCircle className="w-3.5 h-3.5" />
             Veelgestelde Vragen
           </span>
-          <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight">Vragen & Antwoorden</h1>
-          <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
+          <h1 className="text-4xl md:text-5xl font-black mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-100 to-zinc-300 leading-tight">
+            Vragen & Antwoorden
+          </h1>
+          <p className="text-red-100 text-sm md:text-base leading-relaxed">
             Heb je een vraag over de werking van de stemmodule, de uitzending of de statistieken? Hier vind je antwoorden op de meest gestelde vragen.
           </p>
         </div>

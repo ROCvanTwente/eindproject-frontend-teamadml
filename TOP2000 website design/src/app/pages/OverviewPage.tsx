@@ -217,16 +217,17 @@ export function OverviewPage() {
   return (
     <div className="pb-16">
       {/* ── Page Header ────────────────────────────────────────────────────── */}
-      <section className="py-10">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-primary/20 border border-primary/30">
-              <Radio className="w-6 h-6 text-primary" />
-            </div>
-            <span className="text-sm font-semibold text-primary uppercase tracking-widest">Dashboard</span>
+      <section className="relative overflow-hidden py-12 border-b border-zinc-800 bg-gradient-to-r from-red-900 via-red-655 to-red-900 text-white">
+        <div className="absolute inset-0 bg-black/15 pointer-events-none" />
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="flex items-center gap-2 mb-3">
+            <Radio className="w-5 h-5 text-red-200 animate-pulse" />
+            <span className="text-xs font-semibold text-red-200 uppercase tracking-widest">Dashboard</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-3">Overzicht</h1>
-          <p className="text-muted-foreground text-lg max-w-xl">
+          <h1 className="text-4xl md:text-5xl font-black mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-100 to-zinc-300 leading-tight">
+            Overzicht
+          </h1>
+          <p className="text-red-100 text-lg max-w-xl">
             Alles over de Top 2000 in één oogopslag — statistieken, topnummers en snelle links.
           </p>
         </div>
