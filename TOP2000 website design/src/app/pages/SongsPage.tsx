@@ -1,19 +1,19 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  AlertCircle, 
-  Loader2, 
-  Music, 
-  Search, 
-  X, 
+import {
+  AlertCircle,
+  Loader2,
+  Music,
+  Search,
+  X,
   ChevronDown,
-  LayoutGrid, 
-  List, 
-  ArrowUp, 
-  Calendar, 
-  TrendingUp, 
-  Sparkles, 
-  Award 
+  LayoutGrid,
+  List,
+  ArrowUp,
+  Calendar,
+  TrendingUp,
+  Sparkles,
+  Award
 } from 'lucide-react';
 import { loadSongsCatalog, loadArtistsCatalog, type BackendSong, type BackendArtist } from '../data/api';
 
@@ -144,13 +144,13 @@ export function SongsPage() {
       const matchTitle = song.title.toLowerCase().includes(titleSearch.toLowerCase());
       const matchArtist = artistFilter === ''
         || (song.artistName ?? '').toLowerCase().includes(artistFilter.toLowerCase());
-      
+
       let matchDecade = true;
       if (decadeFilter) {
         const dec = Math.floor((song.releaseYear || 0) / 10) * 10;
         matchDecade = dec.toString() === decadeFilter;
       }
-      
+
       return matchTitle && matchArtist && matchDecade;
     });
 
@@ -209,12 +209,13 @@ export function SongsPage() {
   return (
     <div className="pb-12 relative">
       {/* Header */}
-      <section className="py-12 bg-gradient-to-b from-zinc-950 to-transparent">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-200 to-zinc-400">
+      <section className="relative overflow-hidden py-12 border-b border-zinc-800 bg-gradient-to-r from-red-900 via-red-655 to-red-900 text-white">
+        <div className="absolute inset-0 bg-black/15 pointer-events-none" />
+        <div className="container mx-auto px-4 relative z-10">
+          <h1 className="text-4xl md:text-5xl font-black mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-100 to-zinc-300 leading-tight">
             Nummers
           </h1>
-          <p className="text-zinc-400 text-lg">
+          <p className="text-red-100 text-lg">
             Verken de rijke geschiedenis van alle nummers uit de TOP 2000
           </p>
         </div>
@@ -269,24 +270,13 @@ export function SongsPage() {
             {/* Spotlight Song & Statistics Dashboard */}
             {stats && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {/* Stats indicators */}
-                <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-zinc-700/50 transition-colors">
-                  <div>
-                    <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Tijdperk</span>
-                    <h3 className="text-xl font-bold mt-2 text-zinc-100 flex items-center gap-1.5">
-                      <Calendar className="w-5 h-5 text-primary" />
-                      {stats.oldestYear} <span className="text-zinc-500 text-xs font-normal">tot</span> {stats.newestYear}
-                    </h3>
-                  </div>
-                  <p className="text-xs text-zinc-550 mt-4">Releases variërend van klassiek vinyl tot de modernste streaming hits</p>
-                </div>
 
                 {/* Spotlight Song Card */}
                 {stats.spotlightSong && (
                   <div className="bg-gradient-to-br from-zinc-900/40 via-zinc-950/50 to-zinc-900/30 backdrop-blur-md border border-primary/25 rounded-2xl p-6 shadow-2xl relative overflow-hidden group hover:border-primary/55 transition-all flex flex-col justify-between">
                     {/* Glow backdrop decorative */}
                     <div className="absolute -right-20 -top-20 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none group-hover:bg-primary/20 transition-all duration-500" />
-                    
+
                     <div>
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider block">Meest Genoteerd</span>
@@ -309,9 +299,9 @@ export function SongsPage() {
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="min-w-0 flex-grow">
-                          <Link 
+                          <Link
                             to={`/nummer/${stats.spotlightSong.songId}`}
                             className="font-bold text-base md:text-lg text-white hover:text-primary transition-colors block truncate"
                           >
@@ -334,7 +324,7 @@ export function SongsPage() {
 
                     <div className="mt-4 pt-4 border-t border-zinc-800/60 flex items-center justify-between text-xs">
                       <span className="text-zinc-500">Ontdek details & charts</span>
-                      <Link 
+                      <Link
                         to={`/nummer/${stats.spotlightSong.songId}`}
                         className="text-primary hover:text-white font-medium flex items-center gap-1 group/btn"
                       >
@@ -349,7 +339,7 @@ export function SongsPage() {
             {/* Filter & Controls bar */}
             <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-850 rounded-2xl p-5 mb-6 space-y-4 shadow-xl">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                
+
                 {/* Title search (md:col-span-4) */}
                 <div className="relative md:col-span-4">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -535,7 +525,7 @@ export function SongsPage() {
                             </div>
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-                          
+
                           {/* Decade/Year badge overlay */}
                           {song.releaseYear && (
                             <div className="absolute top-3 right-3 bg-zinc-950/85 backdrop-blur border border-zinc-800/80 px-2 py-0.5 rounded text-xs text-zinc-300 font-semibold shadow">

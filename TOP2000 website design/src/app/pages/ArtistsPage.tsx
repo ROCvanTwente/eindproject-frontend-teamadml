@@ -95,12 +95,13 @@ export function ArtistsPage() {
   return (
     <div className="pb-12">
       {/* Header */}
-      <section className="py-12 bg-gradient-to-b from-zinc-950 to-transparent">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-200 to-zinc-400">
+      <section className="relative overflow-hidden py-12 border-b border-zinc-800 bg-gradient-to-r from-red-900 via-red-650 to-red-900 text-white">
+        <div className="absolute inset-0 bg-black/15 pointer-events-none" />
+        <div className="container mx-auto px-4 relative z-10">
+          <h1 className="text-4xl md:text-5xl font-black mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-100 to-zinc-300 leading-tight">
             Artiesten
           </h1>
-          <p className="text-zinc-400 text-lg">
+          <p className="text-red-100 text-lg">
             Ontdek alle artiesten die ooit in de TOP 2000 lijst hebben geschitterd
           </p>
         </div>
