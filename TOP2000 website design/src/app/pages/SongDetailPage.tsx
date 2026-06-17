@@ -160,18 +160,16 @@ export function SongDetailPage() {
   return (
     <div className="pb-12 text-zinc-100">
       {/* Hero Section with Dynamic Blurred Backdrop */}
-      <section className="relative overflow-hidden py-16 border-b border-zinc-800/80 bg-zinc-950">
+      <section className="relative overflow-hidden py-16 border-b border-zinc-800/80 bg-zinc-950 text-white">
         {/* Blurred backdrop image decoration */}
-        {song.albumCover ? (
+        {song.albumCover && (
           <div 
-            className="absolute inset-0 bg-cover bg-center filter blur-3xl opacity-20 scale-105 pointer-events-none transform-gpu"
+            className="absolute inset-0 bg-cover bg-center filter blur-3xl opacity-15 scale-105 pointer-events-none transform-gpu"
             style={{ backgroundImage: `url(${song.albumCover})` }}
           />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-zinc-950 to-zinc-950 pointer-events-none" />
         )}
-        {/* Dark overlay mask */}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-zinc-950/60" />
+        {/* Red gradient overlay mask */}
+        <div className="absolute inset-0 bg-gradient-to-r from-red-900/90 via-red-600/85 to-red-900/90" />
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-5xl mx-auto">
@@ -312,10 +310,10 @@ export function SongDetailPage() {
                       <Line
                         type="monotone"
                         dataKey="positie"
-                        stroke="#f97316"
+                        stroke="#ef4444"
                         strokeWidth={3}
-                        dot={{ fill: "#f97316", stroke: "#18181b", strokeWidth: 1.5, r: 5 }}
-                        activeDot={{ fill: "#f97316", stroke: "#fff", strokeWidth: 2, r: 7 }}
+                        dot={{ fill: "#ef4444", stroke: "#18181b", strokeWidth: 1.5, r: 5 }}
+                        activeDot={{ fill: "#ef4444", stroke: "#fff", strokeWidth: 2, r: 7 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>

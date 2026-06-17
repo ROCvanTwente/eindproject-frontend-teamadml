@@ -241,16 +241,14 @@ export function ArtistDetailPage() {
       {/* Hero Section with Dynamic Blurred Backdrop */}
       <section className="relative overflow-hidden py-16 border-b border-zinc-800/80 bg-zinc-950 text-white">
         {/* Blurred backdrop image decoration */}
-        {(artist.photoUrl || artist.photo) ? (
+        {(artist.photoUrl || artist.photo) && (
           <div 
-            className="absolute inset-0 bg-cover bg-center filter blur-3xl opacity-20 scale-105 pointer-events-none transform-gpu"
+            className="absolute inset-0 bg-cover bg-center filter blur-3xl opacity-15 scale-105 pointer-events-none transform-gpu"
             style={{ backgroundImage: `url(${artist.photoUrl ?? artist.photo})` }}
           />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-zinc-950 to-zinc-950 pointer-events-none" />
         )}
-        {/* Dark overlay mask */}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-zinc-950/60" />
+        {/* Red gradient overlay mask */}
+        <div className="absolute inset-0 bg-gradient-to-r from-red-900/90 via-red-650/85 to-red-900/90" />
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-5xl mx-auto">
@@ -515,7 +513,7 @@ export function ArtistDetailPage() {
                       />
                       <Legend verticalAlign="top" height={36} />
                       {topSongsForChart.map((song, idx) => {
-                        const colors = ["#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899"];
+                        const colors = ["#ef4444", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899"];
                         const color = colors[idx % colors.length];
                         return (
                           <Line
