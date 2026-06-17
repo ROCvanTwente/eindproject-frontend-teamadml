@@ -331,10 +331,11 @@ export function ArtistDetailPage() {
         </div>
       </section>
 
-      {/* Facts & Statistics Grid */}
-      <section className="py-8 bg-zinc-950 border-b border-zinc-900 shadow-inner">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
+      <div className="container mx-auto px-4 mt-12">
+        <div className="max-w-5xl mx-auto space-y-12">
+          
+          {/* Facts & Statistics Grid */}
+          <section>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               
               {/* Land van herkomst */}
@@ -386,14 +387,10 @@ export function ArtistDetailPage() {
               </div>
 
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {/* Biography & Infobox Section */}
-      <section className="py-12 bg-zinc-950 border-b border-zinc-900">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
+          {/* Biography & Infobox Section */}
+          <section>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               
               {/* Biography (Left 2/3) */}
@@ -474,15 +471,11 @@ export function ArtistDetailPage() {
               </div>
 
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {/* Populariteitsverloop Section */}
-      {sortedYears.length > 0 && (
-        <section className="py-12 bg-zinc-950 border-b border-zinc-900">
-          <div className="container mx-auto px-4">
-            <div className="max-w-5xl mx-auto">
+          {/* Populariteitsverloop Section */}
+          {sortedYears.length > 0 && (
+            <section>
               <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
                 <span className="w-1.5 h-6 bg-primary rounded-full"></span>
                 Populariteitsverloop (Top 5 nummers)
@@ -531,15 +524,11 @@ export function ArtistDetailPage() {
                   </ResponsiveContainer>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-      )}
+            </section>
+          )}
 
-      {/* Songs Section */}
-      <section className="py-12 bg-zinc-950">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
+          {/* Songs Section */}
+          <section>
             <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
               <span className="w-1.5 h-6 bg-primary rounded-full"></span>
               Liedjes in de TOP 2000 ({songs.length})
@@ -623,9 +612,10 @@ export function ArtistDetailPage() {
                 })}
               </div>
             )}
-          </div>
+          </section>
+
         </div>
-      </section>
+      </div>
     </div>
   );
 }
