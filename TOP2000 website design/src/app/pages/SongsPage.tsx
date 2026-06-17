@@ -268,50 +268,17 @@ export function SongsPage() {
           <>
             {/* Spotlight Song & Statistics Dashboard */}
             {stats && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 {/* Stats indicators */}
-                <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-                  <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-zinc-700/50 transition-colors">
-                    <div>
-                      <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Totaal Nummers</span>
-                      <h3 className="text-3xl font-black mt-2 bg-clip-text text-transparent bg-gradient-to-r from-primary via-orange-400 to-amber-300">
-                        {stats.totalSongs}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-zinc-500 mt-4">Klassiekers en moderne favorieten</p>
+                <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-zinc-700/50 transition-colors">
+                  <div>
+                    <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Tijdperk</span>
+                    <h3 className="text-xl font-bold mt-2 text-zinc-100 flex items-center gap-1.5">
+                      <Calendar className="w-5 h-5 text-primary" />
+                      {stats.oldestYear} <span className="text-zinc-500 text-xs font-normal">tot</span> {stats.newestYear}
+                    </h3>
                   </div>
-
-                  <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-zinc-700/50 transition-colors">
-                    <div>
-                      <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Unieke Artiesten</span>
-                      <h3 className="text-3xl font-black mt-2 text-white">
-                        {stats.uniqueArtists}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-zinc-500 mt-4">Talentvolle makers door de jaren heen</p>
-                  </div>
-
-                  <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-zinc-700/50 transition-colors">
-                    <div>
-                      <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Tijdperk</span>
-                      <h3 className="text-xl font-bold mt-2 text-zinc-100 flex items-center gap-1.5">
-                        <Calendar className="w-5 h-5 text-primary" />
-                        {stats.oldestYear} <span className="text-zinc-500 text-xs font-normal">tot</span> {stats.newestYear}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-zinc-500 mt-4">Van klassiek vinyl tot streaming</p>
-                  </div>
-
-                  <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-zinc-700/50 transition-colors">
-                    <div>
-                      <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Gemiddeld Releasejaar</span>
-                      <h3 className="text-xl font-bold mt-2 text-zinc-100 flex items-center gap-1.5">
-                        <TrendingUp className="w-5 h-5 text-orange-400" />
-                        {Math.round(songs.reduce((acc, curr) => acc + (curr.releaseYear || 0), 0) / songs.length)}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-zinc-500 mt-4">Gemiddeld releasejaar van alle tracks</p>
-                  </div>
+                  <p className="text-xs text-zinc-550 mt-4">Releases variërend van klassiek vinyl tot de modernste streaming hits</p>
                 </div>
 
                 {/* Spotlight Song Card */}
