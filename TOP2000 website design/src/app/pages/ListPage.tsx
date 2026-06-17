@@ -40,6 +40,7 @@ export function ListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [fallbackNotice, setFallbackNotice] = useState('');
+  const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null);
 
   // ── Overview state ─────────────────────────────────────────────────────────
   const [artists, setArtists] = useState<BackendArtist[]>([]);
@@ -149,22 +150,10 @@ export function ListPage() {
     return () => { isMounted = false; };
   }, [selectedYear]);
 
-  // Adjust visibleCount based on position filter selection
+  // Start with 30 visible items and load more on scroll/filter change
   useEffect(() => {
-    if (positionFilter === 'top10') {
-      setVisibleCount(10);
-    } else if (positionFilter === 'top50') {
-      setVisibleCount(50);
-    } else if (positionFilter === 'top100') {
-      setVisibleCount(100);
-    } else if (positionFilter === 'top500') {
-      setVisibleCount(500);
-    } else if (positionFilter === 'top2000' || positionFilter === 'all') {
-      setVisibleCount(2000);
-    } else {
-      setVisibleCount(20);
-    }
-  }, [positionFilter, entries]);
+    setVisibleCount(30);
+  }, [positionFilter, searchTerm, selectedYear]);
 
   // ── Derived: filtered list (optimized with useMemo to avoid lag) ───────────
   const filteredSongs = useMemo(() => {
@@ -195,6 +184,21 @@ export function ListPage() {
         return true;
       });
   }, [entries, searchTerm, positionFilter, previousEntriesMap]);
+
+  // Intersection Observer for Infinite Scroll
+  useEffect(() => {
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount(prev => Math.min(prev + 30, filteredSongs.length));
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [sentinel, filteredSongs.length]);
 
   // ── Derived: top artists ───────────────────────────────────────────────────
   const artistSongCount: Record<number, { artist: BackendArtist; count: number }> = {};
@@ -588,15 +592,11 @@ export function ListPage() {
                 </div>
               ))}
 
-              {/* Load More */}
+              {/* Infinite Scroll Sentinel */}
               {visibleCount < filteredSongs.length && (
-                <div className="text-center mt-8">
-                  <button
-                    onClick={() => setVisibleCount(prev => prev + 20)}
-                    className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:bg-primary/90 transition-colors"
-                  >
-                    Laad meer nummers
-                  </button>
+                <div ref={setSentinel} className="flex items-center justify-center py-10 text-muted-foreground gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Meer nummers laden…
                 </div>
               )}
 

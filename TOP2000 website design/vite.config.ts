@@ -3,7 +3,9 @@ import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
-const backendTarget = 'https://top2000teamadml.runasp.net'
+const backendTarget = process.env.NODE_ENV === 'production' || process.env.VERCEL
+  ? 'https://top2000teamadml.runasp.net'
+  : 'http://localhost:5229';
 
 
 function figmaAssetResolver() {

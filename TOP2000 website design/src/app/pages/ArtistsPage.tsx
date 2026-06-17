@@ -21,6 +21,8 @@ export function ArtistsPage() {
   const [pageSize, setPageSize] = useState<PageSize>(50);
   const [visibleCount, setVisibleCount] = useState(50);
 
+  const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null);
+
   // Load all artists once
   useEffect(() => {
     let isMounted = true;
@@ -66,6 +68,24 @@ export function ArtistsPage() {
     setVisibleCount(pageSize === 'all' ? filteredArtists.length : pageSize);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
+
+  // Intersection Observer for Infinite Scroll
+  useEffect(() => {
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount(prev => {
+            const increment = typeof pageSize === 'number' ? pageSize : 50;
+            return Math.min(prev + increment, filteredArtists.length);
+          });
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [sentinel, filteredArtists.length, pageSize]);
 
   const visibleArtists = filteredArtists.slice(0, visibleCount);
   const hasMore = visibleCount < filteredArtists.length;
@@ -216,16 +236,11 @@ export function ArtistsPage() {
                   ))}
                 </div>
 
-                {/* Load more */}
+                {/* Infinite Scroll Sentinel */}
                 {hasMore && (
-                  <div className="text-center mt-8 space-y-2">
-                    <button
-                      onClick={() => setVisibleCount(prev => prev + (pageSize === 'all' ? filteredArtists.length : pageSize))}
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors cursor-pointer"
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                      Laad meer artiesten ({filteredArtists.length - visibleCount} nog te laden)
-                    </button>
+                  <div ref={setSentinel} className="flex items-center justify-center py-10 text-muted-foreground gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Meer artiesten laden…
                   </div>
                 )}
               </>
