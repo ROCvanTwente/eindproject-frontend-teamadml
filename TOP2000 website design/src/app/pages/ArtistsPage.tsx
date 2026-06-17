@@ -95,11 +95,13 @@ export function ArtistsPage() {
   return (
     <div className="pb-12">
       {/* Header */}
-      <section className="py-8">
+      <section className="py-12 bg-gradient-to-b from-zinc-950 to-transparent">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Artiesten</h1>
-          <p className="text-muted-foreground">
-            Alle artiesten die ooit in de TOP 2000 hebben gestaan
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-200 to-zinc-400">
+            Artiesten
+          </h1>
+          <p className="text-zinc-400 text-lg">
+            Ontdek alle artiesten die ooit in de TOP 2000 lijst hebben geschitterd
           </p>
         </div>
       </section>
@@ -108,9 +110,16 @@ export function ArtistsPage() {
 
         {/* Loading */}
         {fetchState === 'loading' && (
-          <div className="flex items-center justify-center gap-3 text-muted-foreground py-16">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Artiesten worden geladen…
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="bg-zinc-900/30 border border-zinc-800/40 rounded-xl overflow-hidden animate-pulse flex flex-col h-full">
+                <div className="aspect-square bg-zinc-950/60" />
+                <div className="p-4 space-y-2 flex-grow">
+                  <div className="h-4 bg-zinc-800 rounded w-3/4" />
+                  <div className="h-3 bg-zinc-800 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -132,18 +141,18 @@ export function ArtistsPage() {
 
               {/* Search */}
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input
                   type="text"
                   placeholder="Zoek een artiest…"
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 border border-border rounded-xl bg-input-background focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                  className="w-full pl-10 pr-10 py-2.5 border border-zinc-800 rounded-xl bg-zinc-950/60 text-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/50 text-sm placeholder:text-zinc-500"
                 />
                 {searchTerm && (
                   <button
                     onClick={handleClearSearch}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors cursor-pointer"
                     title="Filter wissen"
                   >
                     <X className="w-4 h-4" />
@@ -153,16 +162,16 @@ export function ArtistsPage() {
 
               {/* Page size picker */}
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">Toon:</span>
-                <div className="flex rounded-xl border border-border overflow-hidden">
+                <span className="text-sm text-zinc-400 whitespace-nowrap">Toon:</span>
+                <div className="flex rounded-xl border border-zinc-850 overflow-hidden bg-zinc-950/40">
                   {PAGE_SIZE_OPTIONS.map(opt => (
                     <button
                       key={opt.label}
                       onClick={() => setPageSize(opt.value)}
-                      className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer
+                      className={`px-3 py-2 text-sm font-semibold transition-all duration-200 cursor-pointer
                         ${pageSize === opt.value
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-card text-muted-foreground hover:bg-muted'
+                          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]'
+                          : 'text-zinc-400 hover:bg-zinc-800/40 hover:text-white'
                         }`}
                     >
                       {opt.label}
@@ -173,11 +182,11 @@ export function ArtistsPage() {
             </div>
 
             {/* Results count */}
-            <div className="mb-5 flex items-center justify-between text-sm text-muted-foreground">
+            <div className="mb-5 flex items-center justify-between text-sm text-zinc-400">
               <span>
                 {searchTerm
-                  ? <><strong className="text-foreground">{filteredArtists.length}</strong> artiesten gevonden voor "<em>{searchTerm}</em>"</>
-                  : <><strong className="text-foreground">{filteredArtists.length}</strong> artiesten totaal</>
+                  ? <><strong className="text-white">{filteredArtists.length}</strong> artiesten gevonden voor "<em>{searchTerm}</em>"</>
+                  : <><strong className="text-white">{filteredArtists.length}</strong> artiesten in totaal</>
                 }
               </span>
               <span>Toon {Math.min(visibleCount, filteredArtists.length)} van {filteredArtists.length}</span>
@@ -185,10 +194,10 @@ export function ArtistsPage() {
 
             {/* No results */}
             {filteredArtists.length === 0 ? (
-              <div className="text-center py-16">
-                <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Geen artiesten gevonden</h3>
-                <p className="text-muted-foreground mb-4">Er is geen artiest gevonden met "<strong>{searchTerm}</strong>"</p>
+              <div className="text-center py-16 bg-zinc-900/10 border border-zinc-900 rounded-2xl p-6">
+                <Users className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2 text-white">Geen artiesten gevonden</h3>
+                <p className="text-zinc-400 mb-4">Er is geen artiest gevonden met "<strong>{searchTerm}</strong>"</p>
                 <button
                   onClick={handleClearSearch}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
@@ -204,31 +213,35 @@ export function ArtistsPage() {
                     <Link
                       key={artist.artistId}
                       to={`/artiest/${artist.artistId}`}
-                      className="group bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all"
+                      className="group bg-zinc-900/40 backdrop-blur-md border border-zinc-850 hover:border-primary/45 rounded-xl overflow-hidden hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300 flex flex-col"
                     >
-                      {/* Photo */}
-                      <div className="aspect-square overflow-hidden bg-muted">
+                      {/* Photo Container */}
+                      <div className="aspect-square overflow-hidden bg-zinc-950 relative">
                         {artist.photoUrl || artist.photo ? (
                           <img
                             src={artist.photoUrl ?? artist.photo}
                             alt={artist.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             loading="lazy"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Users className="w-10 h-10 text-muted-foreground" />
+                          <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                            <Users className="w-12 h-12 text-zinc-700 group-hover:text-primary/60 transition-colors" />
                           </div>
                         )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
                       </div>
-                      {/* Name */}
-                      <div className="p-3">
-                        <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                      
+                      {/* Name & Stats */}
+                      <div className="p-4 flex-grow flex flex-col justify-between">
+                        <p className="font-bold text-sm md:text-base text-zinc-100 group-hover:text-primary transition-colors truncate">
                           {artist.name}
                         </p>
                         {typeof artist.numberOfSongs === 'number' && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {artist.numberOfSongs} {artist.numberOfSongs === 1 ? 'nummer' : 'nummers'}
+                          <p className="text-xs text-zinc-400 mt-2 font-medium">
+                            <span className="inline-block px-1.5 py-0.5 bg-zinc-800/80 rounded border border-zinc-700/50 text-zinc-300">
+                              {artist.numberOfSongs} {artist.numberOfSongs === 1 ? 'nummer' : 'nummers'}
+                            </span>
                           </p>
                         )}
                       </div>

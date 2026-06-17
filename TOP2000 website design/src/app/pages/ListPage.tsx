@@ -458,34 +458,34 @@ export function ListPage() {
           </div>
 
           {/* Filters */}
-          <div className="bg-card border border-border p-6 mb-6 rounded-xl">
+          <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 p-6 mb-6 rounded-xl shadow-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Year Selector */}
               <div>
-                <label className="block text-sm mb-2">Jaar</label>
+                <label className="block text-sm mb-2 text-zinc-300 font-semibold">Jaar</label>
                 <div className="relative">
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
                     disabled={years.length === 0}
-                    className="w-full px-4 py-2 border border-border rounded-lg appearance-none bg-input-background focus:outline-none focus:ring-2 focus:ring-primary pr-10 disabled:opacity-55"
+                    className="w-full px-4 py-2 border border-zinc-800 rounded-lg appearance-none bg-zinc-950/60 text-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/50 pr-10 disabled:opacity-55"
                   >
                     {years.map(year => (
                       <option key={year} value={year}>{year}</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 pointer-events-none" />
                 </div>
               </div>
 
               {/* Position Filter */}
               <div>
-                <label className="block text-sm mb-2">Positie</label>
+                <label className="block text-sm mb-2 text-zinc-300 font-semibold">Positie</label>
                 <div className="relative">
                   <select
                     value={positionFilter}
                     onChange={(e) => setPositionFilter(e.target.value)}
-                    className="w-full px-4 py-2 border border-border rounded-lg appearance-none bg-input-background focus:outline-none focus:ring-2 focus:ring-primary pr-10"
+                    className="w-full px-4 py-2 border border-zinc-800 rounded-lg appearance-none bg-zinc-950/60 text-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/50 pr-10"
                   >
                     <option value="all">Alle posities</option>
                     <option value="top10">Top 10</option>
@@ -494,21 +494,21 @@ export function ListPage() {
                     <option value="top500">Top 500</option>
                     <option value="top2000">Top 2000</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 pointer-events-none" />
                 </div>
               </div>
 
               {/* Search */}
               <div>
-                <label className="block text-sm mb-2">Zoeken</label>
+                <label className="block text-sm mb-2 text-zinc-300 font-semibold">Zoeken</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                   <input
                     type="text"
                     placeholder="Zoek op titel of artiest..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full pl-10 pr-4 py-2 border border-zinc-800 rounded-lg bg-zinc-950/60 text-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/50"
                   />
                 </div>
               </div>
@@ -524,20 +524,21 @@ export function ListPage() {
           )}
 
           {/* Results summary */}
-          <div className="mb-4 text-muted-foreground">
+          <div className="mb-4 text-muted-foreground text-sm">
             {loading ? 'Laden...' : `${filteredSongs.length} ${filteredSongs.length === 1 ? 'nummer' : 'nummers'} gevonden`}
           </div>
 
           {/* Loading / Error / List */}
           {loading ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <div key={i} className="bg-card border border-border p-4 animate-pulse flex items-center gap-4">
-                  <div className="w-12 h-8 bg-zinc-800 rounded" />
+                <div key={i} className="bg-zinc-900/30 border border-zinc-800/60 p-4 rounded-xl animate-pulse flex items-center gap-4">
+                  <div className="w-8 h-8 bg-zinc-800 rounded-lg flex-shrink-0" />
                   <div className="flex-grow space-y-2">
-                    <div className="h-6 bg-zinc-800 rounded w-1/3" />
-                    <div className="h-4 bg-zinc-800 rounded w-1/4" />
+                    <div className="h-5 bg-zinc-800 rounded w-1/4" />
+                    <div className="h-3 bg-zinc-800 rounded w-1/5" />
                   </div>
+                  <div className="w-10 h-10 bg-zinc-800 rounded-full flex-shrink-0" />
                 </div>
               ))}
             </div>
@@ -548,49 +549,69 @@ export function ListPage() {
               <p className="text-muted-foreground text-sm">{error}</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {filteredSongs.slice(0, visibleCount).map((song, index) => (
-                <div key={index} className="bg-card border border-border p-4 hover:shadow-sm transition-all">
-                  <div className="flex items-center gap-4">
-                    {/* Position */}
-                    <div className="flex-shrink-0 w-12 text-center">
-                      <div className={`text-2xl font-bold ${song.position <= 10 ? 'text-primary' : ''}`}>
-                        {song.position}
+            <div className="space-y-3">
+              {filteredSongs.slice(0, visibleCount).map((song, index) => {
+                const isTop3 = song.position <= 3;
+                const rankBadgeClass = isTop3
+                  ? song.position === 1
+                    ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/20'
+                    : song.position === 2
+                      ? 'bg-slate-300 text-black shadow-lg shadow-slate-300/20'
+                      : 'bg-amber-700 text-white shadow-lg shadow-amber-700/20'
+                  : 'bg-zinc-800 text-zinc-300 border border-zinc-700';
+
+                return (
+                  <div 
+                    key={index} 
+                    className="group bg-zinc-900/40 backdrop-blur-md border border-zinc-800/80 hover:border-primary/45 hover:bg-zinc-800/30 p-4 rounded-xl hover:shadow-lg transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Position */}
+                      <div className="flex-shrink-0 w-12 flex justify-center">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-sm ${rankBadgeClass}`}>
+                          {song.position}
+                        </div>
+                      </div>
+
+                      {/* Song Info */}
+                      <div className="flex-grow min-w-0">
+                        <h3 className="font-bold text-base md:text-lg text-white group-hover:text-primary transition-colors truncate">
+                          {song.title}
+                        </h3>
+                        <p className="text-muted-foreground text-xs md:text-sm truncate mt-0.5">
+                          {song.artist}{song.year > 0 && ` • ${song.year}`}
+                        </p>
+                      </div>
+
+                      {/* Change Indicator */}
+                      <div className="hidden sm:flex items-center gap-2 text-sm flex-shrink-0">
+                        {song.change === 'new' ? (
+                          <span className="text-primary font-bold text-[10px] bg-primary/15 px-2 py-0.5 border border-primary/30 rounded-full uppercase tracking-wider">
+                            Nieuw
+                          </span>
+                        ) : typeof song.change === 'number' && song.change > 0 ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-green-500 bg-green-500/10 px-2 py-0.5 border border-green-500/20 rounded-full">
+                            <TrendingUp className="w-3.5 h-3.5" />
+                            +{song.change}
+                          </span>
+                        ) : typeof song.change === 'number' && song.change < 0 ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 border border-primary/25 rounded-full">
+                            <TrendingDown className="w-3.5 h-3.5" />
+                            {song.change}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-600 font-bold text-xs">-</span>
+                        )}
+                      </div>
+
+                      {/* Play Button */}
+                      <div className="flex-shrink-0 group-hover:scale-105 transition-transform duration-200">
+                        <PlayButton title={song.title} artist={song.artist} variant="icon" />
                       </div>
                     </div>
-
-                    {/* Song Info */}
-                    <div className="flex-grow min-w-0">
-                      <h3 className="font-semibold text-lg truncate">{song.title}</h3>
-                      <p className="text-muted-foreground">{song.artist}{song.year > 0 && ` • ${song.year}`}</p>
-                    </div>
-
-                    {/* Change Indicator */}
-                    <div className="hidden sm:flex items-center gap-2 text-sm">
-                      {song.change === 'new' ? (
-                        <span className="text-primary font-semibold text-xs bg-primary/10 px-2 py-0.5 border border-primary/20 rounded">
-                          Nieuw
-                        </span>
-                      ) : typeof song.change === 'number' && song.change > 0 ? (
-                        <>
-                          <TrendingUp className="w-4 h-4 text-green-600" />
-                          <span className="text-green-600">+{song.change}</span>
-                        </>
-                      ) : typeof song.change === 'number' && song.change < 0 ? (
-                        <>
-                          <TrendingDown className="w-4 h-4 text-red-600" />
-                          <span className="text-red-600">{song.change}</span>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </div>
-
-                    {/* Play Button */}
-                    <PlayButton title={song.title} artist={song.artist} variant="icon" />
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {/* Infinite Scroll Sentinel */}
               {visibleCount < filteredSongs.length && (
