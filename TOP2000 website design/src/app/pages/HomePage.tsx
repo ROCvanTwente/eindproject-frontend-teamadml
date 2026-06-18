@@ -1,8 +1,9 @@
 import { Carousel } from '../components/Carousel';
 import { Top5List } from '../components/Top5List';
-import { ChevronDown, ChevronRight, ExternalLink, Play, Pause, SkipForward, Radio, BarChart3, Mail, Music, Calendar, ListMusic, Users, Clock } from 'lucide-react';
+import { ChevronDown, ChevronRight, ExternalLink, SkipForward, Radio, BarChart3, Mail, Music, Calendar, ListMusic, Users, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { fetchTop2000Years, fetchSongs } from '../data/api';
+import { PlayButton } from '../components/PlayButton';
 
 const articleData = [
   {
@@ -180,13 +181,8 @@ export function HomePage() {
                 </div>
 
                 <div className="flex items-center gap-1.5 border-l border-white/10 pl-3.5">
-                  <button
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="p-1.5 bg-white/5 hover:bg-primary text-white rounded-md transition-all cursor-pointer flex items-center justify-center"
-                    title={isPlaying ? 'Pauze' : 'Speel'}
-                  >
-                    {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-                  </button>
+                  {/* Spotify play button – opens the real Spotify modal */}
+                  <PlayButton title={currentSong.title} artist={currentSong.artist} variant="icon" />
                   <button
                     onClick={handleSkipSong}
                     className="p-1.5 text-muted-foreground hover:text-white transition-colors cursor-pointer flex items-center justify-center"

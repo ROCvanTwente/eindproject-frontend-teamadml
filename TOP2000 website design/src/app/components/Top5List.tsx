@@ -1,4 +1,5 @@
-import { Play, TrendingUp, TrendingDown, Minus, Star, Award, Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Star, Award, Loader2 } from 'lucide-react';
+import { PlayButton } from './PlayButton';
 import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { fetchTop2000Years, loadTop2000ByYear } from '../data/api';
@@ -347,9 +348,6 @@ export function Top5List() {
                             alt={`${song.title} album art`}
                             className="w-full h-full object-cover group-hover/hero:scale-105 transition-transform duration-300"
                           />
-                          <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover/hero:opacity-100 transition-opacity">
-                            <Play className="w-6 h-6 text-white fill-current" />
-                          </div>
                         </div>
 
                         {/* Info */}
@@ -386,9 +384,7 @@ export function Top5List() {
                         </div>
 
                         {/* Play Action button */}
-                        <button className="bg-primary text-primary-foreground p-3 rounded-full hover:bg-accent transition-colors shadow-md hover:scale-105 duration-200 cursor-pointer flex-shrink-0 mr-1">
-                          <Play className="w-4 h-4 fill-current" />
-                        </button>
+                        <PlayButton title={song.title} artist={song.artist} variant="icon" />
                       </motion.div>
                     );
                   })()}
@@ -466,9 +462,7 @@ export function Top5List() {
                             </div>
 
                             {/* Play Button */}
-                            <button className="bg-primary/20 hover:bg-primary text-white p-2 rounded-full transition-colors cursor-pointer">
-                              <Play className="w-3 h-3 fill-current" />
-                            </button>
+                            <PlayButton title={song.title} artist={song.artist} variant="icon" />
                           </div>
                         </motion.div>
                       );
