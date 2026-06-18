@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, Loader2, Search, Users, X, ChevronDown } from 'lucide-react';
-import { loadArtistsCatalog, type BackendArtist } from '../data/api';
+import { type BackendArtist } from '../data/api';
+import { useCatalog } from '../context/CatalogContext';
 
 type FetchState = 'idle' | 'loading' | 'success' | 'error';
 type PageSize = 10 | 50 | 100 | 'all';
@@ -15,40 +16,13 @@ const PAGE_SIZE_OPTIONS: { label: string; value: PageSize }[] = [
 
 export function ArtistsPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [allArtists, setAllArtists] = useState<BackendArtist[]>([]);
-  const [fetchState, setFetchState] = useState<FetchState>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
+  const { artists: allArtists, isLoading, error } = useCatalog();
+  const fetchState: FetchState = isLoading ? 'loading' : error ? 'error' : 'success';
+  const errorMessage = error ?? '';
   const [pageSize, setPageSize] = useState<PageSize>(50);
   const [visibleCount, setVisibleCount] = useState(50);
 
   const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null);
-
-  // Load all artists once
-  useEffect(() => {
-    let isMounted = true;
-    const load = async () => {
-      setFetchState('loading');
-      const result = await loadArtistsCatalog();
-      if (!isMounted) return;
-      if (!result.ok) {
-        setErrorMessage(result.message ?? 'Artiesten konden niet worden geladen.');
-        setFetchState('error');
-        return;
-      }
-      // Deduplicate by name (case-insensitive) — keep first occurrence
-      const seen = new Set<string>();
-      const unique = result.data.filter(a => {
-        const key = a.name.trim().toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-      setAllArtists(unique);
-      setFetchState('success');
-    };
-    void load();
-    return () => { isMounted = false; };
-  }, []);
 
   // Filtered + sorted list (memoised for performance)
   const filteredArtists = useMemo(() =>

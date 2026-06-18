@@ -15,7 +15,8 @@ import {
   Sparkles,
   Award
 } from 'lucide-react';
-import { loadSongsCatalog, loadArtistsCatalog, type BackendSong, type BackendArtist } from '../data/api';
+import { type BackendSong, type BackendArtist } from '../data/api';
+import { useCatalog } from '../context/CatalogContext';
 
 type FetchState = 'idle' | 'loading' | 'success' | 'error';
 type PageSize = 10 | 50 | 100 | 'all';
@@ -35,36 +36,12 @@ export function SongsPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  const [songs, setSongs] = useState<BackendSong[]>([]);
-  const [artists, setArtists] = useState<BackendArtist[]>([]);
-  const [fetchState, setFetchState] = useState<FetchState>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
+  const { songs, artists, isLoading, error } = useCatalog();
+  const fetchState: FetchState = isLoading ? 'loading' : error ? 'error' : 'success';
+  const errorMessage = error ?? '';
   const [pageSize, setPageSize] = useState<PageSize>(50);
   const [visibleCount, setVisibleCount] = useState(50);
   const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null);
-
-  // Load songs + artists in parallel
-  useEffect(() => {
-    let isMounted = true;
-    const load = async () => {
-      setFetchState('loading');
-      const [songsRes, artistsRes] = await Promise.all([
-        loadSongsCatalog(),
-        loadArtistsCatalog(),
-      ]);
-      if (!isMounted) return;
-      if (!songsRes.ok) {
-        setErrorMessage(songsRes.message ?? 'Nummers konden niet worden geladen.');
-        setFetchState('error');
-        return;
-      }
-      setSongs(songsRes.data);
-      setArtists(artistsRes.data);
-      setFetchState('success');
-    };
-    void load();
-    return () => { isMounted = false; };
-  }, []);
 
   // Back to top button scroll listener
   useEffect(() => {

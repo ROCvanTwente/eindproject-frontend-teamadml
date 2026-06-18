@@ -28,6 +28,7 @@ import {
 } from '../data/api';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
+import { useCatalog } from '../context/CatalogContext';
 
 import { OverviewTab, type EndpointDiagnostic, type EndpointKey } from './admin/OverviewTab';
 import { ArtistsTab } from './admin/ArtistsTab';
@@ -68,6 +69,7 @@ const createEndpointDiagnostics = (status: FetchState): Record<EndpointKey, Endp
 export function AdminPanel() {
 	const location = useLocation();
 	const navigate = useNavigate();
+	const { refreshCatalog } = useCatalog();
 
 	const [artists, setArtists] = useState<BackendArtist[]>([]);
 	const [songs, setSongs] = useState<BackendSong[]>([]);
@@ -134,7 +136,10 @@ export function AdminPanel() {
 		setEndpointDiagnostics(createEndpointDiagnostics('loading'));
 
 		try {
-			const adminCatalog = await loadAdminCatalog();
+			const [adminCatalog] = await Promise.all([
+				loadAdminCatalog(),
+				refreshCatalog()
+			]);
 
 			const nextDiagnostics: Record<EndpointKey, EndpointDiagnostic> = {
 				artists: {

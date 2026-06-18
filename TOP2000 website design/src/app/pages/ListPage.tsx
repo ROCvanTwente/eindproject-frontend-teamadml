@@ -20,12 +20,11 @@ import {
 import {
   fetchTop2000Years,
   loadTop2000ByYear,
-  loadArtistsCatalog,
-  loadSongsCatalog,
   type BackendTop2000Entry,
   type BackendArtist,
   type BackendSong,
 } from '../data/api';
+import { useCatalog } from '../context/CatalogContext';
 import { PlayButton } from '../components/PlayButton';
 
 export function ListPage() {
@@ -43,10 +42,9 @@ export function ListPage() {
   const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null);
 
   // ── Overview state ─────────────────────────────────────────────────────────
-  const [artists, setArtists] = useState<BackendArtist[]>([]);
-  const [songs, setSongs] = useState<BackendSong[]>([]);
+  const { songs, artists, isLoading: catalogLoading } = useCatalog();
   const [top10, setTop10] = useState<BackendTop2000Entry[]>([]);
-  const [overviewLoading, setOverviewLoading] = useState(true);
+  const [top10Loading, setTop10Loading] = useState(true);
 
   // ── Fetch years + overview data ────────────────────────────────────────────
   useEffect(() => {
@@ -69,28 +67,24 @@ export function ListPage() {
           setSelectedYear(latestDb.toString());
         }
 
-        setOverviewLoading(true);
-        const [artistsRes, songsRes, top10Res] = await Promise.all([
-          loadArtistsCatalog(),
-          loadSongsCatalog(),
-          loadTop2000ByYear(Math.max(...yearsRes.data)),
-        ]);
+        setTop10Loading(true);
+        const top10Res = await loadTop2000ByYear(Math.max(...yearsRes.data));
 
         if (isMounted) {
-          if (artistsRes.ok) setArtists(artistsRes.data);
-          if (songsRes.ok) setSongs(songsRes.data);
           if (top10Res.ok) setTop10(top10Res.data.slice(0, 10));
-          setOverviewLoading(false);
+          setTop10Loading(false);
         }
       } catch (err) {
         console.error('Failed to load initial overview details:', err);
-        if (isMounted) setOverviewLoading(false);
+        if (isMounted) setTop10Loading(false);
       }
     };
 
     void loadInitial();
     return () => { isMounted = false; };
   }, []);
+
+  const overviewLoading = catalogLoading || top10Loading;
 
   // ── Fetch entries for selected list year ───────────────────────────────────
   useEffect(() => {
@@ -200,17 +194,28 @@ export function ListPage() {
     return () => observer.disconnect();
   }, [sentinel, filteredSongs.length]);
 
-  // ── Derived: top artists ───────────────────────────────────────────────────
-  const artistSongCount: Record<number, { artist: BackendArtist; count: number }> = {};
-  songs.forEach(song => {
-    if (!song.artistId) return;
-    if (!artistSongCount[song.artistId]) {
-      const artist = artists.find(a => a.artistId === song.artistId);
-      if (artist) artistSongCount[song.artistId] = { artist, count: 0 };
-    }
-    if (artistSongCount[song.artistId]) artistSongCount[song.artistId].count += 1;
-  });
-  const topArtists = Object.values(artistSongCount).sort((a, b) => b.count - a.count).slice(0, 5);
+  // ── Derived: top artists (optimized with Map lookup and useMemo) ───────────
+  const topArtists = useMemo(() => {
+    if (songs.length === 0 || artists.length === 0) return [];
+    
+    const artistMap = new Map<number, BackendArtist>();
+    artists.forEach(a => artistMap.set(a.artistId, a));
+
+    const artistSongCount: Record<number, { artist: BackendArtist; count: number }> = {};
+    songs.forEach(song => {
+      if (!song.artistId) return;
+      if (!artistSongCount[song.artistId]) {
+        const artist = artistMap.get(song.artistId);
+        if (artist) {
+          artistSongCount[song.artistId] = { artist, count: 0 };
+        }
+      }
+      if (artistSongCount[song.artistId]) {
+        artistSongCount[song.artistId].count += 1;
+      }
+    });
+    return Object.values(artistSongCount).sort((a, b) => b.count - a.count).slice(0, 5);
+  }, [songs, artists]);
   const latestYear = years.find(y => parseInt(y) <= 2024) ?? years[0] ?? '–';
   const firstYear = years[years.length - 1] ?? '–';
 

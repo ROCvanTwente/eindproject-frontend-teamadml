@@ -14,7 +14,8 @@ import {
   ArrowRight,
   Music4
 } from 'lucide-react';
-import { loadSongsCatalog, fetchMyVotes, submitVotes, type BackendSong } from '../data/api';
+import { fetchMyVotes, submitVotes, type BackendSong } from '../data/api';
+import { useCatalog } from '../context/CatalogContext';
 import { toast } from 'sonner';
 
 type FetchState = 'idle' | 'loading' | 'success' | 'error';
@@ -27,60 +28,50 @@ export function VotingPage() {
   const isAuthenticated = !!token;
 
   // Search & Ballot State
+  // Search & Ballot State
   const [searchTerm, setSearchTerm] = useState('');
-  const [songs, setSongs] = useState<BackendSong[]>([]);
+  const { songs, isLoading: catalogLoading, error: catalogError } = useCatalog();
   const [ballot, setBallot] = useState<number[]>([]); // Array of SongIds
   const [visibleCount, setVisibleCount] = useState(30);
 
   // Status flags
-  const [songsFetchState, setSongsFetchState] = useState<FetchState>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [votesLoading, setVotesLoading] = useState(false);
+  const [votesError, setVotesError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [voteSubmitted, setVoteSubmitted] = useState(false);
 
-  // Load songs catalog and existing votes if logged in
+  const songsFetchState: FetchState = (catalogLoading || votesLoading) ? 'loading' : (catalogError || votesError) ? 'error' : 'success';
+  const errorMessage = catalogError ?? votesError ?? '';
+
+  // Load existing votes if logged in
   useEffect(() => {
     if (!isAuthenticated) return;
 
     let isMounted = true;
 
-    const loadData = async () => {
-      setSongsFetchState('loading');
-      setErrorMessage('');
+    const loadVotes = async () => {
+      setVotesLoading(true);
+      setVotesError(null);
 
       try {
-        // Parallel load of songs catalog and user's current votes
-        const [songsRes, votesRes] = await Promise.all([
-          loadSongsCatalog(),
-          fetchMyVotes()
-        ]);
-
+        const votesRes = await fetchMyVotes();
         if (!isMounted) return;
 
-        // Set songs catalog
-        if (songsRes.ok) {
-          setSongs(songsRes.data);
-        } else {
-          setSongsFetchState('error');
-          setErrorMessage(songsRes.message ?? 'De songcatalogus kon niet geladen worden.');
-          return;
-        }
-
-        // Set existing votes
         if (votesRes.ok && Array.isArray(votesRes.data)) {
           setBallot(votesRes.data);
+        } else if (!votesRes.ok) {
+          setVotesError(votesRes.message ?? 'Je stemmen konden niet geladen worden.');
         }
-
-        setSongsFetchState('success');
       } catch (err) {
         if (!isMounted) return;
-        setSongsFetchState('error');
-        setErrorMessage('Er is een fout opgetreden bij het laden van de gegevens.');
+        setVotesError('Er is een fout opgetreden bij het laden van je stemmen.');
         console.error(err);
+      } finally {
+        if (isMounted) setVotesLoading(false);
       }
     };
 
-    void loadData();
+    void loadVotes();
 
     return () => {
       isMounted = false;

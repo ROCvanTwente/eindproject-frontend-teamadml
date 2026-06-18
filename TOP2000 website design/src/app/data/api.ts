@@ -101,7 +101,27 @@ function getResponseMessage(url: string, status: number, body: string) {
   return `${url} returned ${status}.`;
 }
 
+const activeGetRequests = new Map<string, Promise<any>>();
+
 async function fetchJson<T>(
+  url: string,
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+  bodyData?: unknown
+): Promise<ApiResult<T>> {
+  if (method === 'GET') {
+    let pending = activeGetRequests.get(url);
+    if (!pending) {
+      pending = fetchJsonImpl<T>(url, method, bodyData);
+      activeGetRequests.set(url, pending);
+      const cleanUp = () => activeGetRequests.delete(url);
+      pending.then(cleanUp, cleanUp);
+    }
+    return pending;
+  }
+  return fetchJsonImpl<T>(url, method, bodyData);
+}
+
+async function fetchJsonImpl<T>(
   url: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
   bodyData?: unknown
@@ -336,8 +356,21 @@ export async function fetchSongRankings(songId: number): Promise<ApiResult<SongR
   };
 }
 
-export function fetchTop2000Years() {
-  return fetchJson<number[]>(API_ENDPOINTS.top2000);
+let yearsCache: ApiResult<number[]> | null = null;
+const top2000Cache = new Map<number, EndpointLoadResult<BackendTop2000Entry>>();
+
+export function clearApiCaches() {
+  yearsCache = null;
+  top2000Cache.clear();
+}
+
+export async function fetchTop2000Years() {
+  if (yearsCache) return yearsCache;
+  const result = await fetchJson<number[]>(API_ENDPOINTS.top2000);
+  if (result.ok) {
+    yearsCache = result;
+  }
+  return result;
 }
 
 export function fetchTop2000ByYear(year: number) {
@@ -345,6 +378,9 @@ export function fetchTop2000ByYear(year: number) {
 }
 
 export async function loadTop2000ByYear(year: number) {
+  if (top2000Cache.has(year)) {
+    return top2000Cache.get(year)!;
+  }
   const result = await loadArrayEndpoint(() => fetchTop2000ByYear(year), `Muzieklijst voor ${year} kon niet worden geladen.`);
   if (result.ok && result.data) {
     result.data = result.data.map(entry => ({
@@ -358,6 +394,7 @@ export async function loadTop2000ByYear(year: number) {
         artistName: entry.song.artistName ?? entry.song.artist?.name,
       } : entry.song
     }));
+    top2000Cache.set(year, result);
   }
   return result;
 }
