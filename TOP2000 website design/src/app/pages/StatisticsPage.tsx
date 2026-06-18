@@ -3,13 +3,13 @@ import { TrendingUp, TrendingDown, Award, Star, Users, Loader2 } from 'lucide-re
 
 type StatType = 'stijgers' | 'dalers' | 'newcomers' | 'disappeared' | 'all-editions' | 'top-artists' | 'artists-all-editions';
 
-interface StijgerDto { songId: number; title: string; artistName: string; currentPosition: number; previousPosition: number; change: number; }
-interface DalerDto { songId: number; title: string; artistName: string; currentPosition: number; previousPosition: number; change: number; }
-interface NieuwkomerDto { songId: number; title: string; artistName: string; position: number; }
-interface InAlleEditiesDto { songId: number; title: string; artistName: string; position: number; }
-interface VerdwenenNummerDto { songId: number; title: string; artistName: string; previousPosition: number; }
-interface TopArtiestDto { artistName: string; songCount: number; }
-interface ArtiestInAlleEditiesDto { artistName: string; songCount: number; }
+interface StijgerDto { songId: number; title: string; artistName: string; artistPhoto: string | null; songImgUrl: string | null; currentPosition: number; previousPosition: number; change: number; }
+interface DalerDto { songId: number; title: string; artistName: string; artistPhoto: string | null; songImgUrl: string | null; currentPosition: number; previousPosition: number; change: number; }
+interface NieuwkomerDto { songId: number; title: string; artistName: string; artistPhoto: string | null; songImgUrl: string | null; position: number; }
+interface InAlleEditiesDto { songId: number; title: string; artistName: string; artistPhoto: string | null; songImgUrl: string | null; position: number; }
+interface VerdwenenNummerDto { songId: number; title: string; artistName: string; artistPhoto: string | null; songImgUrl: string | null; previousPosition: number; }
+interface TopArtiestDto { artistName: string; artistPhoto: string | null; songCount: number; }
+interface ArtiestInAlleEditiesDto { artistName: string; artistPhoto: string | null; songCount: number; }
 
 export function StatisticsPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2024);
@@ -91,6 +91,12 @@ export function StatisticsPage() {
 
   const currentStatOption = statOptions.find(opt => opt.id === selectedStat);
 
+  const getAvatarUrl = (primaryUrl: string | null, secondaryUrl: string | null, name: string) => {
+    if (primaryUrl && primaryUrl.trim() !== '') return primaryUrl;
+    if (secondaryUrl && secondaryUrl.trim() !== '') return secondaryUrl;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=ef4444&color=fff&rounded=true&size=32`;
+  };
+
   return (
     <div className="pb-12">
       <section className="py-12">
@@ -155,7 +161,12 @@ export function StatisticsPage() {
                           <td className="px-4 py-3 font-semibold text-primary">{song.currentPosition}</td>
                           <td className="px-4 py-3 text-muted-foreground">{song.previousPosition}</td>
                           <td className="px-4 py-3 font-medium">{song.title}</td>
-                          <td className="px-4 py-3">{song.artistName}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <img src={getAvatarUrl(song.songImgUrl, song.artistPhoto, song.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {song.artistName}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -185,7 +196,12 @@ export function StatisticsPage() {
                           <td className="px-4 py-3 font-semibold text-primary">{song.currentPosition}</td>
                           <td className="px-4 py-3 text-muted-foreground">{song.previousPosition}</td>
                           <td className="px-4 py-3 font-medium">{song.title}</td>
-                          <td className="px-4 py-3">{song.artistName}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <img src={getAvatarUrl(song.songImgUrl, song.artistPhoto, song.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {song.artistName}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -213,7 +229,12 @@ export function StatisticsPage() {
                         <tr key={song.songId} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
                           <td className="px-4 py-3 font-semibold text-primary">{song.position}</td>
                           <td className="px-4 py-3 font-medium">{song.title}</td>
-                          <td className="px-4 py-3">{song.artistName}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <img src={getAvatarUrl(song.songImgUrl, song.artistPhoto, song.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {song.artistName}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -241,7 +262,12 @@ export function StatisticsPage() {
                         <tr key={song.songId} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
                           <td className="px-4 py-3 font-semibold text-primary">{song.position}</td>
                           <td className="px-4 py-3 font-medium">{song.title}</td>
-                          <td className="px-4 py-3">{song.artistName}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <img src={getAvatarUrl(song.songImgUrl, song.artistPhoto, song.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {song.artistName}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -269,7 +295,12 @@ export function StatisticsPage() {
                         <tr key={song.songId} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
                           <td className="px-4 py-3 font-semibold text-destructive">{song.previousPosition}</td>
                           <td className="px-4 py-3 font-medium">{song.title}</td>
-                          <td className="px-4 py-3">{song.artistName}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <img src={getAvatarUrl(song.songImgUrl, song.artistPhoto, song.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {song.artistName}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -296,7 +327,12 @@ export function StatisticsPage() {
                       {topArtiestenData.map((artist, index) => (
                         <tr key={artist.artistName} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
                           <td className="px-4 py-3 font-semibold text-primary">{index + 1}</td>
-                          <td className="px-4 py-3 font-medium">{artist.artistName}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3 font-medium">
+                              <img src={getAvatarUrl(artist.artistPhoto, null, artist.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {artist.artistName}
+                            </div>
+                          </td>
                           <td className="px-4 py-3">{artist.songCount} nummers</td>
                         </tr>
                       ))}
@@ -324,7 +360,12 @@ export function StatisticsPage() {
                       {artiestenInAlleEditiesData.map((artist, index) => (
                         <tr key={artist.artistName} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
                           <td className="px-4 py-3 font-semibold text-primary">{index + 1}</td>
-                          <td className="px-4 py-3 font-medium">{artist.artistName}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3 font-medium">
+                              <img src={getAvatarUrl(artist.artistPhoto, null, artist.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {artist.artistName}
+                            </div>
+                          </td>
                           <td className="px-4 py-3">{artist.songCount} nummers</td>
                         </tr>
                       ))}
