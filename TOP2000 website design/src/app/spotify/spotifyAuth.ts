@@ -161,6 +161,11 @@ export interface SpotifyTrack {
 const searchCache = new Map<string, SpotifyTrack | null>();
 let rateLimitResetAt = 0;
 
+function setRateLimitReset(timestamp: number) {
+  rateLimitResetAt = timestamp;
+  (globalThis as any).__spotifyRateLimitResetAt = timestamp;
+}
+
 function normalizeText(text: string): string {
   return text
     .normalize('NFD')
@@ -187,8 +192,19 @@ function sanitizeSearchQuery(title: string, artist: string) {
   return { cleanTitle, cleanArtist };
 }
 
-async function trySearch(query: string, token: string): Promise<SpotifyTrack | null> {
-  if (Date.now() < rateLimitResetAt) return null;
+async function trySearch(query: string, token: string, retryCount = 0): Promise<SpotifyTrack | null> {
+  if (Date.now() < rateLimitResetAt) {
+    // If we haven't retried yet, wait for the rate limit to reset then try
+    if (retryCount === 0) {
+      const waitMs = rateLimitResetAt - Date.now();
+      if (waitMs > 0 && waitMs <= 10_000) {
+        console.log(`[Spotify] Rate limited — waiting ${Math.ceil(waitMs / 1000)}s before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitMs + 500));
+        return trySearch(query, token, retryCount + 1);
+      }
+    }
+    return null;
+  }
   
   try {
     const res = await fetch(
@@ -197,8 +213,17 @@ async function trySearch(query: string, token: string): Promise<SpotifyTrack | n
     );
     
     if (res.status === 429) {
-      const retryAfter = parseInt(res.headers.get('Retry-After') || '30', 10);
-      rateLimitResetAt = Date.now() + (retryAfter * 1000);
+      const retryAfter = parseInt(res.headers.get('Retry-After') || '5', 10);
+      const waitMs = retryAfter * 1000;
+      setRateLimitReset(Date.now() + waitMs);
+      console.warn(`[Spotify] 429 Rate Limited. Retry-After: ${retryAfter}s`);
+
+      // Auto-retry once if the wait is reasonable (≤10s)
+      if (retryCount === 0 && waitMs <= 10_000) {
+        console.log(`[Spotify] Waiting ${retryAfter}s then retrying...`);
+        await new Promise(resolve => setTimeout(resolve, waitMs + 500));
+        return trySearch(query, token, retryCount + 1);
+      }
       return null;
     }
     
@@ -218,11 +243,15 @@ export async function searchTrack(title: string, artist: string, token: string):
     return searchCache.get(cacheKey) ?? null;
   }
 
-  // Block early if still rate limited
+  // If rate limited, trySearch will auto-wait-and-retry for short waits
   if (Date.now() < rateLimitResetAt) {
-    const waitSec = Math.ceil((rateLimitResetAt - Date.now()) / 1000);
-    console.warn(`Spotify rate limited for ${waitSec}s more. Skipping search.`);
-    return null;
+    const waitMs = rateLimitResetAt - Date.now();
+    if (waitMs > 10_000) {
+      const waitSec = Math.ceil(waitMs / 1000);
+      console.warn(`[Spotify] Rate limited for ${waitSec}s more. Skipping search.`);
+      return null;
+    }
+    // Short wait — trySearch will handle the delay automatically
   }
 
   const { cleanTitle, cleanArtist } = sanitizeSearchQuery(title, artist);

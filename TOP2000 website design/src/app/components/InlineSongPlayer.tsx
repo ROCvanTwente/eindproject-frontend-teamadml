@@ -15,11 +15,9 @@ export function InlineSongPlayer({ title, artist }: InlineSongPlayerProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const spotify = useSpotify();
 
-  const handlePlay = async () => {
+  const handlePlay = () => {
     setModalOpen(true);
-    if (spotify.isConnected && spotify.isReady) {
-      await spotify.playTrack(title, artist);
-    }
+    // NOTE: playTrack is triggered by SpotifyModal's useEffect on mount — do NOT call it here too
   };
 
   return (

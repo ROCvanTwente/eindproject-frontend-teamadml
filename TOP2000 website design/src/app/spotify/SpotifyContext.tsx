@@ -198,7 +198,14 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
     const track = await searchTrack(title, artist, token);
     console.log('[Spotify Debug] searchTrack result:', track ? { id: track.id, uri: track.uri, name: track.name } : 'NULL');
     if (!track) {
-      patch({ isLoading: false, error: `"${title}" kon niet worden gevonden op Spotify.` });
+      // Check if failure was due to rate limiting
+      const isRateLimited = Date.now() < (globalThis as any).__spotifyRateLimitResetAt;
+      patch({ 
+        isLoading: false, 
+        error: isRateLimited 
+          ? 'Spotify is tijdelijk overbelast. Wacht een paar seconden en probeer opnieuw.'
+          : `"${title}" kon niet worden gevonden op Spotify.`
+      });
       return;
     }
 
