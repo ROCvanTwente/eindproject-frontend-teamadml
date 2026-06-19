@@ -1,6 +1,21 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Award, Star, Users, Loader2, ThumbsUp, Music } from 'lucide-react';
-import { fetchVoteResults, type VoteResultEntry } from '../data/api';
+import {
+  fetchVoteResults,
+  fetchStijgers,
+  fetchDalers,
+  fetchNieuwkomers,
+  fetchInAlleEdities,
+  fetchVerdwenenNummers,
+  fetchTopArtiesten,
+  type VoteResultEntry,
+  type StijgerDto,
+  type DalerDto,
+  type NieuwkomerDto,
+  type InAlleEditiesDto,
+  type VerdwenenNummerDto,
+  type TopArtiestDto
+} from '../data/api';
 import {
   ResponsiveContainer,
   BarChart,
@@ -44,13 +59,6 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 type StatType = 'stijgers' | 'dalers' | 'newcomers' | 'disappeared' | 'all-editions' | 'top-artists' | 'voting-results';
 
-interface StijgerDto { songId: number; title: string; artistName: string; currentPosition: number; previousPosition: number; change: number; }
-interface DalerDto { songId: number; title: string; artistName: string; currentPosition: number; previousPosition: number; change: number; }
-interface NieuwkomerDto { songId: number; title: string; artistName: string; position: number; }
-interface InAlleEditiesDto { songId: number; title: string; artistName: string; position: number; }
-interface VerdwenenNummerDto { songId: number; title: string; artistName: string; previousPosition: number; }
-interface TopArtiestDto { artistName: string; songCount: number; }
-
 export function StatisticsPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2024);
   const [selectedStat, setSelectedStat] = useState<StatType>('stijgers');
@@ -72,54 +80,44 @@ export function StatisticsPage() {
     setIsLoading(true);
     setError(null);
 
-    if (selectedStat === 'stijgers') {
-      fetch(`/api/top2000/statistics/stijgers/${selectedYear}`)
-        .then(res => { if (!res.ok) throw new Error('Geen stijgers gevonden'); return res.json(); })
-        .then(data => { setStijgersData(data); setIsLoading(false); })
-        .catch(err => { setError(err.message); setStijgersData([]); setIsLoading(false); });
-    }
-    else if (selectedStat === 'dalers') {
-      fetch(`/api/top2000/statistics/dalers/${selectedYear}`)
-        .then(res => { if (!res.ok) throw new Error('Geen dalers gevonden'); return res.json(); })
-        .then(data => { setDalersData(data); setIsLoading(false); })
-        .catch(err => { setError(err.message); setDalersData([]); setIsLoading(false); });
-    }
-    else if (selectedStat === 'newcomers') {
-      fetch(`/api/top2000/statistics/nieuwkomers/${selectedYear}`)
-        .then(res => { if (!res.ok) throw new Error('Geen nieuwkomers gevonden'); return res.json(); })
-        .then(data => { setNieuwkomersData(data); setIsLoading(false); })
-        .catch(err => { setError(err.message); setNieuwkomersData([]); setIsLoading(false); });
-    }
-    else if (selectedStat === 'all-editions') {
-      fetch(`/api/top2000/statistics/in-alle-edities/${selectedYear}`)
-        .then(res => { if (!res.ok) throw new Error('Data ophalen mislukt'); return res.json(); })
-        .then(data => { setAllEditionsData(data); setIsLoading(false); })
-        .catch(err => { setError(err.message); setAllEditionsData([]); setIsLoading(false); });
-    }
-    else if (selectedStat === 'disappeared') {
-      fetch(`/api/top2000/statistics/verdwenen-nummers/${selectedYear}`)
-        .then(res => { if (!res.ok) throw new Error('Geen verdwenen nummers gevonden'); return res.json(); })
-        .then(data => { setVerdwenenData(data); setIsLoading(false); })
-        .catch(err => { setError(err.message); setVerdwenenData([]); setIsLoading(false); });
-    }
-    else if (selectedStat === 'top-artists') {
-      fetch(`/api/top2000/statistics/top-artiesten/${selectedYear}`)
-        .then(res => { if (!res.ok) throw new Error('Geen top artiesten gevonden'); return res.json(); })
-        .then(data => { setTopArtiestenData(data); setIsLoading(false); })
-        .catch(err => { setError(err.message); setTopArtiestenData([]); setIsLoading(false); });
-    }
-    else if (selectedStat === 'voting-results') {
-      fetchVoteResults()
+    const handleResult = <T,>(
+      promise: Promise<any>,
+      setter: (data: T) => void,
+      errorMessage: string
+    ) => {
+      promise
         .then(res => {
-          if (!res.ok) throw new Error(res.message ?? 'Geen stemresultaten gevonden');
-          setVotingResultsData(res.data);
+          if (!res.ok) throw new Error(res.message ?? errorMessage);
+          setter(res.data);
           setIsLoading(false);
         })
         .catch(err => {
           setError(err.message);
-          setVotingResultsData([]);
+          setter([] as unknown as T);
           setIsLoading(false);
         });
+    };
+
+    if (selectedStat === 'stijgers') {
+      handleResult(fetchStijgers(selectedYear), setStijgersData, 'Geen stijgers gevonden');
+    }
+    else if (selectedStat === 'dalers') {
+      handleResult(fetchDalers(selectedYear), setDalersData, 'Geen dalers gevonden');
+    }
+    else if (selectedStat === 'newcomers') {
+      handleResult(fetchNieuwkomers(selectedYear), setNieuwkomersData, 'Geen nieuwkomers gevonden');
+    }
+    else if (selectedStat === 'all-editions') {
+      handleResult(fetchInAlleEdities(selectedYear), setAllEditionsData, 'Data ophalen mislukt');
+    }
+    else if (selectedStat === 'disappeared') {
+      handleResult(fetchVerdwenenNummers(selectedYear), setVerdwenenData, 'Geen verdwenen nummers gevonden');
+    }
+    else if (selectedStat === 'top-artists') {
+      handleResult(fetchTopArtiesten(selectedYear), setTopArtiestenData, 'Geen top artiesten gevonden');
+    }
+    else if (selectedStat === 'voting-results') {
+      handleResult(fetchVoteResults(), setVotingResultsData, 'Geen stemresultaten gevonden');
     }
     else {
       setIsLoading(false);

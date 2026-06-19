@@ -582,3 +582,71 @@ export function submitVotes(songIds: number[]) {
 export function fetchVoteResults() {
   return fetchJson<VoteResultEntry[]>('/api/votes/results');
 }
+
+export interface StijgerDto {
+  songId: number;
+  title: string;
+  artistName: string;
+  currentPosition: number;
+  previousPosition: number;
+  change: number;
+}
+
+export interface DalerDto {
+  songId: number;
+  title: string;
+  artistName: string;
+  currentPosition: number;
+  previousPosition: number;
+  change: number;
+}
+
+export interface NieuwkomerDto {
+  songId: number;
+  title: string;
+  artistName: string;
+  position: number;
+}
+
+export interface InAlleEditiesDto {
+  songId: number;
+  title: string;
+  artistName: string;
+  position: number;
+}
+
+export interface VerdwenenNummerDto {
+  songId: number;
+  title: string;
+  artistName: string;
+  previousPosition: number;
+}
+
+export interface TopArtiestDto {
+  artistName: string;
+  songCount: number;
+}
+
+export function fetchStijgers(year: number) {
+  return fetchJson<StijgerDto[]>(`/api/top2000/statistics/stijgers/${year}`);
+}
+
+export function fetchDalers(year: number) {
+  return fetchJson<DalerDto[]>(`/api/top2000/statistics/dalers/${year}`);
+}
+
+export function fetchNieuwkomers(year: number) {
+  return fetchJson<NieuwkomerDto[]>(`/api/top2000/statistics/nieuwkomers/${year}`);
+}
+
+export function fetchInAlleEdities(year: number) {
+  return fetchJson<InAlleEditiesDto[]>(`/api/top2000/statistics/in-alle-edities/${year}`);
+}
+
+export function fetchVerdwenenNummers(year: number) {
+  return fetchJson<VerdwenenNummerDto[]>(`/api/top2000/statistics/verdwenen-nummers/${year}`);
+}
+
+export function fetchTopArtiesten(year: number) {
+  return fetchJson<TopArtiestDto[]>(`/api/top2000/statistics/top-artiesten/${year}`);
+}
