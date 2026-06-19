@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSpotify } from '../spotify/SpotifyContext';
 import {
   Play, Pause, Volume2, VolumeX, X, Music, Loader2, ExternalLink, AlertTriangle,
@@ -123,7 +124,7 @@ export function SpotifyModal({ title, artist, onClose }: SpotifyModalProps) {
 
   const isCurrentTrack = track?.name.toLowerCase() === title.toLowerCase();
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-4"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
@@ -288,6 +289,7 @@ export function SpotifyModal({ title, artist, onClose }: SpotifyModalProps) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
