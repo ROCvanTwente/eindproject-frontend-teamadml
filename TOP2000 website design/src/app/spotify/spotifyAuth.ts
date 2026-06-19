@@ -193,12 +193,15 @@ function sanitizeSearchQuery(title: string, artist: string) {
   return { cleanTitle, cleanArtist };
 }
 
-async function trySearch(query: string, token: string): Promise<SpotifyTrack | null> {
+const RATE_LIMITED = Symbol('RATE_LIMITED');
+
+async function trySearch(query: string, token: string): Promise<SpotifyTrack | null | typeof RATE_LIMITED> {
   try {
     const res = await fetch(
       `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
+    if (res.status === 429) return RATE_LIMITED;  // stop all retries
     if (!res.ok) return null;
     const data = await res.json();
     return data.tracks?.items?.[0] ?? null;
@@ -212,32 +215,28 @@ export async function searchTrack(title: string, artist: string, token: string):
   const normTitle  = normalizeText(cleanTitle);
   const normArtist = normalizeText(cleanArtist);
 
-  // Strategy 1: Strict Spotify field search (original cleaned values)
-  let result = await trySearch(`track:${cleanTitle} artist:${cleanArtist}`, token);
-  if (result) return result;
+  const strategies = [
+    `track:${cleanTitle} artist:${cleanArtist}`,
+    ...(normTitle !== cleanTitle || normArtist !== cleanArtist
+      ? [`track:${normTitle} artist:${normArtist}`]
+      : []),
+    `${cleanTitle} ${cleanArtist}`,
+    ...(normTitle !== cleanTitle || normArtist !== cleanArtist
+      ? [`${normTitle} ${normArtist}`]
+      : []),
+    `track:${normTitle}`,
+    normTitle,
+  ];
 
-  // Strategy 2: Strict field search with normalized values (handles apostrophes, accents)
-  if (normTitle !== cleanTitle || normArtist !== cleanArtist) {
-    result = await trySearch(`track:${normTitle} artist:${normArtist}`, token);
+  for (const query of strategies) {
+    const result = await trySearch(query, token);
+    if (result === RATE_LIMITED) {
+      console.warn('Spotify rate limit hit — stopping search retries.');
+      return null;  // bail out completely, don't hammer the API
+    }
     if (result) return result;
   }
 
-  // Strategy 3: Fuzzy combined search (title + artist as plain text)
-  result = await trySearch(`${cleanTitle} ${cleanArtist}`, token);
-  if (result) return result;
-
-  // Strategy 4: Fuzzy with normalized values
-  if (normTitle !== cleanTitle || normArtist !== cleanArtist) {
-    result = await trySearch(`${normTitle} ${normArtist}`, token);
-    if (result) return result;
-  }
-
-  // Strategy 5: Title only (artist might be spelled differently in Spotify)
-  result = await trySearch(`track:${normTitle}`, token);
-  if (result) return result;
-
-  // Strategy 6: Bare title only as last resort
-  result = await trySearch(normTitle, token);
-  return result;
+  return null;
 }
 
