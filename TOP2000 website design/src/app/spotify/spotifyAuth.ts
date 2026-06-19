@@ -158,18 +158,29 @@ export interface SpotifyTrack {
   preview_url: string | null;
 }
 
+
+function normalizeText(text: string): string {
+  return text
+    // Normalize unicode (e.g. accented characters → base form)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    // Replace typographic apostrophes and similar with standard apostrophe
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u0060]/g, "'")
+    // Strip leading punctuation that Spotify can't handle (e.g. "'n Beetje" → "n Beetje")
+    .replace(/^['\u2018\u2019\u201A`]+/, '')
+    .trim();
+}
+
 function sanitizeSearchQuery(title: string, artist: string) {
   // 1. Clean Title
   let cleanTitle = title
-    // Remove leading/trailing dots and ellipses (common in censored titles like ".. In Paris")
-    .replace(/^\.+/, '')
+    .replace(/^\\.+/, '')   // Remove leading dots
     .trim();
 
   // Remove common parenthetical metadata like (Remastered 2011), (Live), (Radio Edit), etc.
   cleanTitle = cleanTitle.replace(/\s*[\(\[][^)]*?(remaster|live|edit|mono|stereo|version|mix)[^)]*?[\)\]]/gi, '').trim();
 
-  // 2. Clean Artist
-  // Take the first artist in case of collaborations (e.g. "Queen & David Bowie" -> "Queen")
+  // 2. Clean Artist — take the first artist in collaborations
   let cleanArtist = artist;
   const splitters = [/\s+&\s+/, /\s+feat\.?\s+/i, /\s+ft\.?\s+/i, /\s+vs\.?\s+/i, /\s+with\s+/i, /\s*,\s*/];
   for (const splitter of splitters) {
@@ -182,39 +193,51 @@ function sanitizeSearchQuery(title: string, artist: string) {
   return { cleanTitle, cleanArtist };
 }
 
+async function trySearch(query: string, token: string): Promise<SpotifyTrack | null> {
+  try {
+    const res = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.tracks?.items?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function searchTrack(title: string, artist: string, token: string): Promise<SpotifyTrack | null> {
   const { cleanTitle, cleanArtist } = sanitizeSearchQuery(title, artist);
+  const normTitle  = normalizeText(cleanTitle);
+  const normArtist = normalizeText(cleanArtist);
 
-  // Attempt 1: Strict field search
-  const strictQuery = encodeURIComponent(`track:${cleanTitle} artist:${cleanArtist}`);
-  try {
-    let res = await fetch(`https://api.spotify.com/v1/search?q=${strictQuery}&type=track&limit=1`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  // Strategy 1: Strict Spotify field search (original cleaned values)
+  let result = await trySearch(`track:${cleanTitle} artist:${cleanArtist}`, token);
+  if (result) return result;
 
-    if (res.ok) {
-      const data = await res.json();
-      const track = data.tracks?.items?.[0];
-      if (track) return track;
-    }
-  } catch (err) {
-    console.error('Strict search failed:', err);
+  // Strategy 2: Strict field search with normalized values (handles apostrophes, accents)
+  if (normTitle !== cleanTitle || normArtist !== cleanArtist) {
+    result = await trySearch(`track:${normTitle} artist:${normArtist}`, token);
+    if (result) return result;
   }
 
-  // Attempt 2: Fallback to fuzzy combined search
-  const fuzzyQuery = encodeURIComponent(`${cleanTitle} ${cleanArtist}`);
-  try {
-    const res = await fetch(`https://api.spotify.com/v1/search?q=${fuzzyQuery}&type=track&limit=1`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  // Strategy 3: Fuzzy combined search (title + artist as plain text)
+  result = await trySearch(`${cleanTitle} ${cleanArtist}`, token);
+  if (result) return result;
 
-    if (res.ok) {
-      const data = await res.json();
-      return data.tracks?.items?.[0] ?? null;
-    }
-  } catch (err) {
-    console.error('Fuzzy fallback search failed:', err);
+  // Strategy 4: Fuzzy with normalized values
+  if (normTitle !== cleanTitle || normArtist !== cleanArtist) {
+    result = await trySearch(`${normTitle} ${normArtist}`, token);
+    if (result) return result;
   }
 
-  return null;
+  // Strategy 5: Title only (artist might be spelled differently in Spotify)
+  result = await trySearch(`track:${normTitle}`, token);
+  if (result) return result;
+
+  // Strategy 6: Bare title only as last resort
+  result = await trySearch(normTitle, token);
+  return result;
 }
+
