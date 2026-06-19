@@ -158,29 +158,24 @@ export interface SpotifyTrack {
   preview_url: string | null;
 }
 
+const searchCache = new Map<string, SpotifyTrack | null>();
+let rateLimitResetAt = 0;
 
 function normalizeText(text: string): string {
   return text
-    // Normalize unicode (e.g. accented characters → base form)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    // Replace typographic apostrophes and similar with standard apostrophe
     .replace(/[\u2018\u2019\u201A\u201B\u2032\u0060]/g, "'")
-    // Strip leading punctuation that Spotify can't handle (e.g. "'n Beetje" → "n Beetje")
     .replace(/^['\u2018\u2019\u201A`]+/, '')
     .trim();
 }
 
 function sanitizeSearchQuery(title: string, artist: string) {
-  // 1. Clean Title
-  let cleanTitle = title
-    .replace(/^\\.+/, '')   // Remove leading dots
-    .trim();
-
-  // Remove common parenthetical metadata like (Remastered 2011), (Live), (Radio Edit), etc.
+  // 1. Clean Title — remove leading dots, strip metadata tags like (Remastered 2011)
+  let cleanTitle = title.replace(/^\.+/, '').trim();
   cleanTitle = cleanTitle.replace(/\s*[\(\[][^)]*?(remaster|live|edit|mono|stereo|version|mix)[^)]*?[\)\]]/gi, '').trim();
 
-  // 2. Clean Artist — take the first artist in collaborations
+  // 2. Clean Artist — take first artist in collaborations (e.g. "Queen & David Bowie" → "Queen")
   let cleanArtist = artist;
   const splitters = [/\s+&\s+/, /\s+feat\.?\s+/i, /\s+ft\.?\s+/i, /\s+vs\.?\s+/i, /\s+with\s+/i, /\s*,\s*/];
   for (const splitter of splitters) {
@@ -189,19 +184,24 @@ function sanitizeSearchQuery(title: string, artist: string) {
       break;
     }
   }
-
   return { cleanTitle, cleanArtist };
 }
 
-const RATE_LIMITED = Symbol('RATE_LIMITED');
-
-async function trySearch(query: string, token: string): Promise<SpotifyTrack | null | typeof RATE_LIMITED> {
+async function trySearch(query: string, token: string): Promise<SpotifyTrack | null> {
+  if (Date.now() < rateLimitResetAt) return null;
+  
   try {
     const res = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`,
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    if (res.status === 429) return RATE_LIMITED;  // stop all retries
+    
+    if (res.status === 429) {
+      const retryAfter = parseInt(res.headers.get('Retry-After') || '30', 10);
+      rateLimitResetAt = Date.now() + (retryAfter * 1000);
+      return null;
+    }
+    
     if (!res.ok) return null;
     const data = await res.json();
     return data.tracks?.items?.[0] ?? null;
@@ -211,31 +211,38 @@ async function trySearch(query: string, token: string): Promise<SpotifyTrack | n
 }
 
 export async function searchTrack(title: string, artist: string, token: string): Promise<SpotifyTrack | null> {
+  const cacheKey = `${title.toLowerCase()}|${artist.toLowerCase()}`;
+
+  // Return cached result immediately — no API call needed
+  if (searchCache.has(cacheKey)) {
+    return searchCache.get(cacheKey) ?? null;
+  }
+
+  // Block early if still rate limited
+  if (Date.now() < rateLimitResetAt) {
+    const waitSec = Math.ceil((rateLimitResetAt - Date.now()) / 1000);
+    console.warn(`Spotify rate limited for ${waitSec}s more. Skipping search.`);
+    return null;
+  }
+
   const { cleanTitle, cleanArtist } = sanitizeSearchQuery(title, artist);
   const normTitle  = normalizeText(cleanTitle);
   const normArtist = normalizeText(cleanArtist);
 
+  // Max 2 strategies to stay well within rate limits
   const strategies = [
     `track:${cleanTitle} artist:${cleanArtist}`,
-    ...(normTitle !== cleanTitle || normArtist !== cleanArtist
-      ? [`track:${normTitle} artist:${normArtist}`]
-      : []),
-    `${cleanTitle} ${cleanArtist}`,
-    ...(normTitle !== cleanTitle || normArtist !== cleanArtist
-      ? [`${normTitle} ${normArtist}`]
-      : []),
-    `track:${normTitle}`,
-    normTitle,
+    `${normTitle} ${normArtist}`,
   ];
 
   for (const query of strategies) {
     const result = await trySearch(query, token);
-    if (result === RATE_LIMITED) {
-      console.warn('Spotify rate limit hit — stopping search retries.');
-      return null;  // bail out completely, don't hammer the API
-    }
-    if (result) return result;
+    if (!result) continue;
+    searchCache.set(cacheKey, result); // cache found track
+    return result;
   }
 
+  // Cache the miss so we don't search again this session
+  searchCache.set(cacheKey, null);
   return null;
 }
