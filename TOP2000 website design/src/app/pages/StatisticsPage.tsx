@@ -119,6 +119,12 @@ export function StatisticsPage() {
     else if (selectedStat === 'voting-results') {
       handleResult(fetchVoteResults(), setVotingResultsData, 'Geen stemresultaten gevonden');
     }
+    else if (selectedStat === 'artists-all-editions') {
+      fetch(`http://localhost:5174/api/top2000/statistics/artiesten-in-alle-edities`)
+        .then(res => { if (!res.ok) throw new Error('Geen artiesten gevonden'); return res.json(); })
+        .then(data => { setArtiestenInAlleEditiesData(data); setIsLoading(false); })
+        .catch(err => { setError(err.message); setArtiestenInAlleEditiesData([]); setIsLoading(false); });
+    }
     else {
       setIsLoading(false);
     }
@@ -131,10 +137,16 @@ export function StatisticsPage() {
     { id: 'all-editions', label: 'In alle edities', icon: Award, requiresYear: true },
     { id: 'disappeared', label: 'Verdwenen nummers', icon: TrendingDown, requiresYear: true },
     { id: 'top-artists', label: 'Top artiesten', icon: Users, requiresYear: true },
-    { id: 'voting-results', label: 'Tussenstand Stemmen', icon: ThumbsUp, requiresYear: false }
+    { id: 'artists-all-editions', label: 'Artiesten in alle edities', icon: Users, requiresYear: false }
   ] as const;
 
   const currentStatOption = statOptions.find(opt => opt.id === selectedStat);
+
+  const getAvatarUrl = (primaryUrl: string | null, secondaryUrl: string | null, name: string) => {
+    if (primaryUrl && primaryUrl.trim() !== '') return primaryUrl;
+    if (secondaryUrl && secondaryUrl.trim() !== '') return secondaryUrl;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=ef4444&color=fff&rounded=true&size=32`;
+  };
 
   return (
     <div className="pb-12">
@@ -182,7 +194,7 @@ export function StatisticsPage() {
         </div>
 
         <div className="bg-card border border-border rounded-lg shadow-md overflow-hidden">
-
+          
           {selectedStat === 'stijgers' && (
             <div className="p-6">
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -191,61 +203,28 @@ export function StatisticsPage() {
               {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Laden...</span></div>}
               {!isLoading && error && <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">{error}</div>}
               {!isLoading && !error && stijgersData.length > 0 ? (
-                <div>
-                  {/* Chart */}
-                  <div className="mb-8 bg-zinc-950/20 border border-border/50 rounded-xl p-4 md:p-6">
-                    <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">Top 10 Stijgers Visualisatie</h3>
-                    <div className="h-72">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={stijgersData.slice(0, 10).map(item => ({
-                            name: item.title.length > 15 ? item.title.substring(0, 15) + '...' : item.title,
-                            artist: item.artistName,
-                            change: item.change,
-                            current: item.currentPosition,
-                            previous: item.previousPosition,
-                            isDaler: false
-                          }))}
-                          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                          <XAxis dataKey="name" stroke="var(--muted-foreground, #71717a)" fontSize={11} tickLine={false} />
-                          <YAxis stroke="var(--muted-foreground, #71717a)" fontSize={11} tickLine={false} axisLine={false} />
-                          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                          <Bar dataKey="change" fill="#10b981" radius={[4, 4, 0, 0]}>
-                            {stijgersData.slice(0, 10).map((_, index) => (
-                              <Cell key={`cell-${index}`} fill="url(#stijgersGrad)" />
-                            ))}
-                          </Bar>
-                          <defs>
-                            <linearGradient id="stijgersGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
-                              <stop offset="100%" stopColor="#10b981" stopOpacity={0.15}/>
-                            </linearGradient>
-                          </defs>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead className="bg-secondary">
-                        <tr><th className="px-4 py-3">Stijging</th><th className="px-4 py-3">Positie {selectedYear}</th><th className="px-4 py-3">Positie {selectedYear - 1}</th><th className="px-4 py-3">Nummer</th><th className="px-4 py-3">Artiest</th></tr>
-                      </thead>
-                      <tbody>
-                        {stijgersData.map((song, index) => (
-                          <tr key={song.songId} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
-                            <td className="px-4 py-3"><span className="inline-flex items-center gap-1 text-green-600 font-bold"><TrendingUp className="w-4 h-4" />+{song.change}</span></td>
-                            <td className="px-4 py-3 font-semibold text-primary">{song.currentPosition}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{song.previousPosition}</td>
-                            <td className="px-4 py-3 font-medium">{song.title}</td>
-                            <td className="px-4 py-3">{song.artistName}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-secondary">
+                      <tr><th className="px-4 py-3">Stijging</th><th className="px-4 py-3">Positie {selectedYear}</th><th className="px-4 py-3">Positie {selectedYear - 1}</th><th className="px-4 py-3">Nummer</th><th className="px-4 py-3">Artiest</th></tr>
+                    </thead>
+                    <tbody>
+                      {stijgersData.map((song, index) => (
+                        <tr key={song.songId} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
+                          <td className="px-4 py-3"><span className="inline-flex items-center gap-1 text-green-600 font-bold"><TrendingUp className="w-4 h-4" />+{song.change}</span></td>
+                          <td className="px-4 py-3 font-semibold text-primary">{song.currentPosition}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{song.previousPosition}</td>
+                          <td className="px-4 py-3 font-medium">{song.title}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <img src={getAvatarUrl(song.songImgUrl, song.artistPhoto, song.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {song.artistName}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : (!isLoading && !error && <p className="text-muted-foreground">Geen data.</p>)}
             </div>
@@ -259,61 +238,28 @@ export function StatisticsPage() {
               {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Laden...</span></div>}
               {!isLoading && error && <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">{error}</div>}
               {!isLoading && !error && dalersData.length > 0 ? (
-                <div>
-                  {/* Chart */}
-                  <div className="mb-8 bg-zinc-950/20 border border-border/50 rounded-xl p-4 md:p-6">
-                    <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">Top 10 Dalers Visualisatie</h3>
-                    <div className="h-72">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={dalersData.slice(0, 10).map(item => ({
-                            name: item.title.length > 15 ? item.title.substring(0, 15) + '...' : item.title,
-                            artist: item.artistName,
-                            change: item.change,
-                            current: item.currentPosition,
-                            previous: item.previousPosition,
-                            isDaler: true
-                          }))}
-                          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                          <XAxis dataKey="name" stroke="var(--muted-foreground, #71717a)" fontSize={11} tickLine={false} />
-                          <YAxis stroke="var(--muted-foreground, #71717a)" fontSize={11} tickLine={false} axisLine={false} />
-                          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                          <Bar dataKey="change" fill="#ef4444" radius={[4, 4, 0, 0]}>
-                            {dalersData.slice(0, 10).map((_, index) => (
-                              <Cell key={`cell-${index}`} fill="url(#dalersGrad)" />
-                            ))}
-                          </Bar>
-                          <defs>
-                            <linearGradient id="dalersGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8}/>
-                              <stop offset="100%" stopColor="#ef4444" stopOpacity={0.15}/>
-                            </linearGradient>
-                          </defs>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead className="bg-secondary">
-                        <tr><th className="px-4 py-3">Daling</th><th className="px-4 py-3">Positie {selectedYear}</th><th className="px-4 py-3">Positie {selectedYear - 1}</th><th className="px-4 py-3">Nummer</th><th className="px-4 py-3">Artiest</th></tr>
-                      </thead>
-                      <tbody>
-                        {dalersData.map((song, index) => (
-                          <tr key={song.songId} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
-                            <td className="px-4 py-3"><span className="inline-flex items-center gap-1 text-destructive font-bold"><TrendingDown className="w-4 h-4" />-{song.change}</span></td>
-                            <td className="px-4 py-3 font-semibold text-primary">{song.currentPosition}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{song.previousPosition}</td>
-                            <td className="px-4 py-3 font-medium">{song.title}</td>
-                            <td className="px-4 py-3">{song.artistName}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-secondary">
+                      <tr><th className="px-4 py-3">Daling</th><th className="px-4 py-3">Positie {selectedYear}</th><th className="px-4 py-3">Positie {selectedYear - 1}</th><th className="px-4 py-3">Nummer</th><th className="px-4 py-3">Artiest</th></tr>
+                    </thead>
+                    <tbody>
+                      {dalersData.map((song, index) => (
+                        <tr key={song.songId} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
+                          <td className="px-4 py-3"><span className="inline-flex items-center gap-1 text-destructive font-bold"><TrendingDown className="w-4 h-4" />-{song.change}</span></td>
+                          <td className="px-4 py-3 font-semibold text-primary">{song.currentPosition}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{song.previousPosition}</td>
+                          <td className="px-4 py-3 font-medium">{song.title}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <img src={getAvatarUrl(song.songImgUrl, song.artistPhoto, song.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {song.artistName}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : (!isLoading && !error && <p className="text-muted-foreground">Geen data.</p>)}
             </div>
@@ -337,7 +283,12 @@ export function StatisticsPage() {
                         <tr key={song.songId} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
                           <td className="px-4 py-3 font-semibold text-primary">{song.position}</td>
                           <td className="px-4 py-3 font-medium">{song.title}</td>
-                          <td className="px-4 py-3">{song.artistName}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <img src={getAvatarUrl(song.songImgUrl, song.artistPhoto, song.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {song.artistName}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -365,7 +316,12 @@ export function StatisticsPage() {
                         <tr key={song.songId} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
                           <td className="px-4 py-3 font-semibold text-primary">{song.position}</td>
                           <td className="px-4 py-3 font-medium">{song.title}</td>
-                          <td className="px-4 py-3">{song.artistName}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <img src={getAvatarUrl(song.songImgUrl, song.artistPhoto, song.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {song.artistName}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -393,7 +349,12 @@ export function StatisticsPage() {
                         <tr key={song.songId} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
                           <td className="px-4 py-3 font-semibold text-destructive">{song.previousPosition}</td>
                           <td className="px-4 py-3 font-medium">{song.title}</td>
-                          <td className="px-4 py-3">{song.artistName}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <img src={getAvatarUrl(song.songImgUrl, song.artistPhoto, song.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {song.artistName}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -411,56 +372,59 @@ export function StatisticsPage() {
               {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Laden...</span></div>}
               {!isLoading && error && <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">{error}</div>}
               {!isLoading && !error && topArtiestenData.length > 0 ? (
-                <div>
-                  {/* Chart */}
-                  <div className="mb-8 bg-zinc-950/20 border border-border/50 rounded-xl p-4 md:p-6">
-                    <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">Top Artiesten Visualisatie</h3>
-                    <div className="h-72">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={topArtiestenData.slice(0, 10).map(item => ({
-                            name: item.artistName.length > 15 ? item.artistName.substring(0, 15) + '...' : item.artistName,
-                            artistName: item.artistName,
-                            songCount: item.songCount
-                          }))}
-                          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                          <XAxis dataKey="name" stroke="var(--muted-foreground, #71717a)" fontSize={11} tickLine={false} />
-                          <YAxis stroke="var(--muted-foreground, #71717a)" fontSize={11} tickLine={false} axisLine={false} />
-                          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                          <Bar dataKey="songCount" fill="#3b82f6" radius={[4, 4, 0, 0]}>
-                            {topArtiestenData.slice(0, 10).map((_, index) => (
-                              <Cell key={`cell-${index}`} fill="url(#artistsGrad)" />
-                            ))}
-                          </Bar>
-                          <defs>
-                            <linearGradient id="artistsGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                              <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.15}/>
-                            </linearGradient>
-                          </defs>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-secondary">
+                      <tr><th className="px-4 py-3">Plek</th><th className="px-4 py-3">Artiest</th><th className="px-4 py-3">Aantal nummers</th></tr>
+                    </thead>
+                    <tbody>
+                      {topArtiestenData.map((artist, index) => (
+                        <tr key={artist.artistName} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
+                          <td className="px-4 py-3 font-semibold text-primary">{index + 1}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3 font-medium">
+                              <img src={getAvatarUrl(artist.artistPhoto, null, artist.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {artist.artistName}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">{artist.songCount} nummers</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (!isLoading && !error && <p className="text-muted-foreground">Geen data gevonden.</p>)}
+            </div>
+          )}
 
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead className="bg-secondary">
-                        <tr><th className="px-4 py-3">Plek</th><th className="px-4 py-3">Artiest</th><th className="px-4 py-3">Aantal nummers</th></tr>
-                      </thead>
-                      <tbody>
-                        {topArtiestenData.map((artist, index) => (
-                          <tr key={artist.artistName} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
-                            <td className="px-4 py-3 font-semibold text-primary">{index + 1}</td>
-                            <td className="px-4 py-3 font-medium">{artist.artistName}</td>
-                            <td className="px-4 py-3">{artist.songCount} nummers</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+          {selectedStat === 'artists-all-editions' && (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <Users className="w-6 h-6 text-primary" /> Artiesten die in elke editie staan
+              </h2>
+              {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Laden...</span></div>}
+              {!isLoading && error && <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">{error}</div>}
+              {!isLoading && !error && artiestenInAlleEditiesData.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-secondary">
+                      <tr><th className="px-4 py-3">Plek</th><th className="px-4 py-3">Artiest</th><th className="px-4 py-3">Unieke nummers in Top 2000</th></tr>
+                    </thead>
+                    <tbody>
+                      {artiestenInAlleEditiesData.map((artist, index) => (
+                        <tr key={artist.artistName} className={index % 2 === 0 ? 'bg-secondary/30' : ''}>
+                          <td className="px-4 py-3 font-semibold text-primary">{index + 1}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3 font-medium">
+                              <img src={getAvatarUrl(artist.artistPhoto, null, artist.artistName)} alt="" className="w-8 h-8 rounded-full shadow-sm object-cover" />
+                              {artist.artistName}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">{artist.songCount} nummers</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : (!isLoading && !error && <p className="text-muted-foreground">Geen data gevonden.</p>)}
             </div>

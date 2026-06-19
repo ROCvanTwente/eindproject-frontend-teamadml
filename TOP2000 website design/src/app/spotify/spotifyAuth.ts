@@ -158,18 +158,24 @@ export interface SpotifyTrack {
   preview_url: string | null;
 }
 
-function sanitizeSearchQuery(title: string, artist: string) {
-  // 1. Clean Title
-  let cleanTitle = title
-    // Remove leading/trailing dots and ellipses (common in censored titles like ".. In Paris")
-    .replace(/^\.+/, '')
-    .trim();
+const searchCache = new Map<string, SpotifyTrack | null>();
+let rateLimitResetAt = 0;
 
-  // Remove common parenthetical metadata like (Remastered 2011), (Live), (Radio Edit), etc.
+function normalizeText(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u0060]/g, "'")
+    .replace(/^['\u2018\u2019\u201A`]+/, '')
+    .trim();
+}
+
+function sanitizeSearchQuery(title: string, artist: string) {
+  // 1. Clean Title — remove leading dots, strip metadata tags like (Remastered 2011)
+  let cleanTitle = title.replace(/^\.+/, '').trim();
   cleanTitle = cleanTitle.replace(/\s*[\(\[][^)]*?(remaster|live|edit|mono|stereo|version|mix)[^)]*?[\)\]]/gi, '').trim();
 
-  // 2. Clean Artist
-  // Take the first artist in case of collaborations (e.g. "Queen & David Bowie" -> "Queen")
+  // 2. Clean Artist — take first artist in collaborations (e.g. "Queen & David Bowie" → "Queen")
   let cleanArtist = artist;
   const splitters = [/\s+&\s+/, /\s+feat\.?\s+/i, /\s+ft\.?\s+/i, /\s+vs\.?\s+/i, /\s+with\s+/i, /\s*,\s*/];
   for (const splitter of splitters) {
@@ -178,43 +184,65 @@ function sanitizeSearchQuery(title: string, artist: string) {
       break;
     }
   }
-
   return { cleanTitle, cleanArtist };
 }
 
+async function trySearch(query: string, token: string): Promise<SpotifyTrack | null> {
+  if (Date.now() < rateLimitResetAt) return null;
+  
+  try {
+    const res = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    
+    if (res.status === 429) {
+      const retryAfter = parseInt(res.headers.get('Retry-After') || '30', 10);
+      rateLimitResetAt = Date.now() + (retryAfter * 1000);
+      return null;
+    }
+    
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.tracks?.items?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function searchTrack(title: string, artist: string, token: string): Promise<SpotifyTrack | null> {
+  const cacheKey = `${title.toLowerCase()}|${artist.toLowerCase()}`;
+
+  // Return cached result immediately — no API call needed
+  if (searchCache.has(cacheKey)) {
+    return searchCache.get(cacheKey) ?? null;
+  }
+
+  // Block early if still rate limited
+  if (Date.now() < rateLimitResetAt) {
+    const waitSec = Math.ceil((rateLimitResetAt - Date.now()) / 1000);
+    console.warn(`Spotify rate limited for ${waitSec}s more. Skipping search.`);
+    return null;
+  }
+
   const { cleanTitle, cleanArtist } = sanitizeSearchQuery(title, artist);
+  const normTitle  = normalizeText(cleanTitle);
+  const normArtist = normalizeText(cleanArtist);
 
-  // Attempt 1: Strict field search
-  const strictQuery = encodeURIComponent(`track:${cleanTitle} artist:${cleanArtist}`);
-  try {
-    let res = await fetch(`https://api.spotify.com/v1/search?q=${strictQuery}&type=track&limit=1`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  // Max 2 strategies to stay well within rate limits
+  const strategies = [
+    `track:${cleanTitle} artist:${cleanArtist}`,
+    `${normTitle} ${normArtist}`,
+  ];
 
-    if (res.ok) {
-      const data = await res.json();
-      const track = data.tracks?.items?.[0];
-      if (track) return track;
-    }
-  } catch (err) {
-    console.error('Strict search failed:', err);
+  for (const query of strategies) {
+    const result = await trySearch(query, token);
+    if (!result) continue;
+    searchCache.set(cacheKey, result); // cache found track
+    return result;
   }
 
-  // Attempt 2: Fallback to fuzzy combined search
-  const fuzzyQuery = encodeURIComponent(`${cleanTitle} ${cleanArtist}`);
-  try {
-    const res = await fetch(`https://api.spotify.com/v1/search?q=${fuzzyQuery}&type=track&limit=1`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      return data.tracks?.items?.[0] ?? null;
-    }
-  } catch (err) {
-    console.error('Fuzzy fallback search failed:', err);
-  }
-
+  // Cache the miss so we don't search again this session
+  searchCache.set(cacheKey, null);
   return null;
 }

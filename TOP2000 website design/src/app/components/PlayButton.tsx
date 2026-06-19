@@ -20,10 +20,7 @@ export function PlayButton({ title, artist, variant = 'default' }: PlayButtonPro
     e.preventDefault();
     e.stopPropagation();
     setModalOpen(true);
-    // If already connected and ready, start playing immediately
-    if (spotify.isConnected && spotify.isReady) {
-      await spotify.playTrack(title, artist);
-    }
+    // NOTE: playTrack is triggered by SpotifyModal's useEffect on mount — do NOT call it here too
   };
 
   if (variant === 'icon') {
