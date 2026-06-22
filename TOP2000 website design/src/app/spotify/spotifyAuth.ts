@@ -1,7 +1,7 @@
 // ─── Spotify PKCE Auth helpers ────────────────────────────────────────────────
 // PKCE = Proof Key for Code Exchange — safe for SPAs (no client secret needed)
 
-export const SPOTIFY_CLIENT_ID = 'c06806b27a6d490fafb1e0d4d4b104e5';
+export const SPOTIFY_CLIENT_ID = '76bd4aa5d0e4419a8b6f72d6cd7773c2';
 
 // !! These URIs must be added EXACTLY as shown in the Spotify Dashboard under "Redirect URIs" !!
 // Localhost:  http://localhost:5174/spotify
@@ -211,13 +211,13 @@ async function trySearch(query: string, token: string, retryCount = 0): Promise<
     }
     return { ok: false, track: null, rateLimited: true };
   }
-  
+
   try {
     const res = await fetch(
       `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    
+
     if (res.status === 429) {
       const retryAfter = parseInt(res.headers.get('Retry-After') || '5', 10);
       const waitMs = retryAfter * 1000;
@@ -232,11 +232,11 @@ async function trySearch(query: string, token: string, retryCount = 0): Promise<
       }
       return { ok: false, track: null, rateLimited: true };
     }
-    
+
     if (!res.ok) {
       return { ok: false, track: null, rateLimited: false };
     }
-    
+
     const data = await res.json();
     const track = data.tracks?.items?.[0] ?? null;
     return { ok: true, track, rateLimited: false };
@@ -266,7 +266,7 @@ export async function searchTrack(title: string, artist: string, token: string):
   }
 
   const { cleanTitle, cleanArtist } = sanitizeSearchQuery(title, artist);
-  const normTitle  = normalizeText(cleanTitle);
+  const normTitle = normalizeText(cleanTitle);
   const normArtist = normalizeText(cleanArtist);
 
   // Max 2 strategies to stay well within rate limits
@@ -279,7 +279,7 @@ export async function searchTrack(title: string, artist: string, token: string):
 
   for (const query of strategies) {
     const result = await trySearch(query, token);
-    
+
     if (result.ok) {
       if (result.track) {
         searchCache.set(cacheKey, result.track); // cache found track
@@ -299,6 +299,6 @@ export async function searchTrack(title: string, artist: string, token: string):
   if (!lastResultWasErrorOrRateLimit) {
     searchCache.set(cacheKey, null);
   }
-  
+
   return null;
 }
