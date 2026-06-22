@@ -158,12 +158,34 @@ export interface SpotifyTrack {
   preview_url: string | null;
 }
 
-const searchCache = new Map<string, SpotifyTrack | null>();
-let rateLimitResetAt = 0;
+// ── Persistent cache (survives page refreshes via sessionStorage) ─────────────
+const CACHE_KEY = 'spotify_search_cache';
+const RATE_KEY  = 'spotify_rate_limit_until';
 
-function setRateLimitReset(timestamp: number) {
-  rateLimitResetAt = timestamp;
-  (globalThis as any).__spotifyRateLimitResetAt = timestamp;
+function cacheGet(key: string): SpotifyTrack | null | undefined {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return undefined;
+    const map = JSON.parse(raw) as Record<string, SpotifyTrack | null>;
+    return key in map ? map[key] : undefined;
+  } catch { return undefined; }
+}
+
+function cacheSet(key: string, value: SpotifyTrack | null): void {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    const map = raw ? JSON.parse(raw) as Record<string, SpotifyTrack | null> : {};
+    map[key] = value;
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(map));
+  } catch { /* sessionStorage full or unavailable */ }
+}
+
+function getRateLimitResetAt(): number {
+  return Number(sessionStorage.getItem(RATE_KEY) ?? 0);
+}
+
+function setRateLimitReset(timestamp: number): void {
+  sessionStorage.setItem(RATE_KEY, String(timestamp));
 }
 
 function normalizeText(text: string): string {
@@ -199,10 +221,9 @@ interface SearchResult {
 }
 
 async function trySearch(query: string, token: string, retryCount = 0): Promise<SearchResult> {
-  if (Date.now() < rateLimitResetAt) {
-    // If we haven't retried yet, wait for the rate limit to reset then try
+  if (Date.now() < getRateLimitResetAt()) {
     if (retryCount === 0) {
-      const waitMs = rateLimitResetAt - Date.now();
+      const waitMs = getRateLimitResetAt() - Date.now();
       if (waitMs > 0 && waitMs <= 10_000) {
         console.log(`[Spotify] Rate limited — waiting ${Math.ceil(waitMs / 1000)}s before retry...`);
         await new Promise(resolve => setTimeout(resolve, waitMs + 500));
@@ -249,17 +270,16 @@ async function trySearch(query: string, token: string, retryCount = 0): Promise<
 export async function searchTrack(title: string, artist: string, token: string): Promise<SpotifyTrack | null> {
   const cacheKey = `${title.toLowerCase()}|${artist.toLowerCase()}`;
 
-  // Return cached result immediately — no API call needed
-  if (searchCache.has(cacheKey)) {
-    return searchCache.get(cacheKey) ?? null;
-  }
+  // Return cached result — survives page refreshes via sessionStorage
+  const cached = cacheGet(cacheKey);
+  if (cached !== undefined) return cached;
 
   // If rate limited, trySearch will auto-wait-and-retry for short waits
-  if (Date.now() < rateLimitResetAt) {
-    const waitMs = rateLimitResetAt - Date.now();
+  const resetAt = getRateLimitResetAt();
+  if (Date.now() < resetAt) {
+    const waitMs = resetAt - Date.now();
     if (waitMs > 10_000) {
-      const waitSec = Math.ceil(waitMs / 1000);
-      console.warn(`[Spotify] Rate limited for ${waitSec}s more. Skipping search.`);
+      console.warn(`[Spotify] Rate limited for ${Math.ceil(waitMs/1000)}s more. Skipping search.`);
       return null;
     }
     // Short wait — trySearch will handle the delay automatically
@@ -282,7 +302,7 @@ export async function searchTrack(title: string, artist: string, token: string):
 
     if (result.ok) {
       if (result.track) {
-        searchCache.set(cacheKey, result.track); // cache found track
+      cacheSet(cacheKey, result.track); // persist to sessionStorage
         return result.track;
       }
     } else {
@@ -297,7 +317,7 @@ export async function searchTrack(title: string, artist: string, token: string):
   // Only cache the miss (null) if we successfully queried the search API and got 0 results.
   // This prevents caching a rate-limited failure or server error as a permanent miss.
   if (!lastResultWasErrorOrRateLimit) {
-    searchCache.set(cacheKey, null);
+    cacheSet(cacheKey, null);
   }
 
   return null;
