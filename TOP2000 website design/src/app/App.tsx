@@ -6,7 +6,6 @@ import { HomePage } from './pages/HomePage';
 import { ListPage } from './pages/ListPage';
 import { NewsPage } from './pages/NewsPage';
 import { HistoryPage } from './pages/HistoryPage';
-import { ProgramPage } from './pages/ProgramPage';
 import { FAQPage } from './pages/FAQPage';
 import { ContactPage } from './pages/ContactPage';
 import { VotingPage } from './pages/VotingPage';
@@ -23,7 +22,13 @@ import { CreatePlaylistPage } from './pages/CreatePlaylistPage';
 import { PlaylistDetailPage } from './pages/PlaylistDetailPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { SettingsProvider } from './context/SettingsContext';
+import { CatalogProvider } from './context/CatalogContext';
 import { Toaster } from './components/ui/sonner';
+import { SpotifyProvider } from './spotify/SpotifyContext';
+import { SpotifyMiniPlayer } from './components/SpotifyPlayer';
+import { SpotifyCallbackPage } from './pages/SpotifyCallbackPage';
 
 const BACKEND_ENDPOINTS = [
   { label: 'GET /api/artists', url: '/api/artists' },
@@ -33,7 +38,7 @@ const BACKEND_ENDPOINTS = [
 
 const AdminRoute = () => {
   const token = localStorage.getItem('token');
-  
+
   if (!token) {
     return <Navigate to="/" replace />;
   }
@@ -45,7 +50,7 @@ const AdminRoute = () => {
     if (role !== 'Admin') {
       return <Navigate to="/" replace />;
     }
-    
+
     return <Outlet />;
   } catch (error) {
     return <Navigate to="/" replace />;
@@ -54,42 +59,58 @@ const AdminRoute = () => {
 
 export default function App() {
   return (
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<HomePage />} />
-          <Route path="lijst" element={<ListPage />} />
-          <Route path="artiesten" element={<ArtistsPage />} />
-          <Route path="artiest/:id" element={<ArtistDetailPage />} />
-          <Route path="nummers" element={<SongsPage />} />
-          <Route path="nummer/:id" element={<SongDetailPage />} />
-          <Route path="nieuws" element={<NewsPage />} />
-          <Route path="geschiedenis" element={<HistoryPage />} />
-          <Route path="programma" element={<ProgramPage />} />
-          <Route path="stemmen" element={<VotingPage />} />
-          <Route path="faq" element={<FAQPage />} />
-          <Route path="contact" element={<ContactPage />} />
-          <Route path="statistieken" element={<StatisticsPage />} />
-          <Route path="privacy" element={<PrivacyPage />} />
-          <Route path="voorwaarden" element={<TermsPage />} />
-          <Route path="playlists" element={<PlaylistsPage />} />
-          <Route path="playlists/new" element={<CreatePlaylistPage />} />
-          <Route path="playlist/:id" element={<PlaylistDetailPage />} />
-          <Route path="admin" element={<AdminPanel />} />
-          <Route path="admin/artiesten" element={<AdminPanel />} />
-          <Route path="admin/nummers" element={<AdminPanel />} />
-          <Route path="admin/logboek" element={<AdminPanel />} />
-          <Route path="admin/gebruikers" element={<AdminPanel />} />
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
-        </Route>
-      </Routes>
-      <Toaster />
-    </BrowserRouter>
+    <SettingsProvider>
+      <CatalogProvider>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          <SpotifyProvider>
+            <SpotifyMiniPlayer />
+            <Routes>
+              {/* Spotify OAuth callback — outside of Layout so no nav is shown */}
+              <Route path="/spotify" element={<SpotifyCallbackPage />} />
+
+              <Route path="/" element={<Layout />}>
+                {/* VRIJE TOEGANG VOOR IEDEREEN */}
+                <Route index element={<HomePage />} />
+                <Route path="lijst" element={<ListPage />} />
+                <Route path="artiesten" element={<ArtistsPage />} />
+                <Route path="artiest/:id" element={<ArtistDetailPage />} />
+                <Route path="nummers" element={<SongsPage />} />
+                <Route path="nummer/:id" element={<SongDetailPage />} />
+                <Route path="nieuws" element={<NewsPage />} />
+                <Route path="geschiedenis" element={<HistoryPage />} />
+                <Route path="stemmen" element={<VotingPage />} />
+                <Route path="faq" element={<FAQPage />} />
+                <Route path="contact" element={<ContactPage />} />
+                <Route path="statistieken" element={<StatisticsPage />} />
+                <Route path="privacy" element={<PrivacyPage />} />
+                <Route path="voorwaarden" element={<TermsPage />} />
+                <Route path="instellingen" element={<SettingsPage />} />
+                <Route path="settings" element={<Navigate to="/instellingen" replace />} />
+                <Route path="playlists" element={<PlaylistsPage />} />
+                <Route path="playlists/new" element={<CreatePlaylistPage />} />
+                <Route path="playlist/:id" element={<PlaylistDetailPage />} />
+                <Route path="login" element={<LoginPage />} />
+                <Route path="register" element={<RegisterPage />} />
+
+                {/* 🔒 BEVEILIGDE ADMIN ROUTES */}
+                <Route element={<AdminRoute />}>
+                  <Route path="admin" element={<AdminPanel />} />
+                  <Route path="admin/artiesten" element={<AdminPanel />} />
+                  <Route path="admin/nummers" element={<AdminPanel />} />
+                  <Route path="admin/logboek" element={<AdminPanel />} />
+                  <Route path="admin/gebruikers" element={<AdminPanel />} />
+                </Route>
+              </Route>
+            </Routes>
+            <Toaster />
+          </SpotifyProvider>
+        </BrowserRouter>
+      </CatalogProvider>
+    </SettingsProvider>
   );
 }

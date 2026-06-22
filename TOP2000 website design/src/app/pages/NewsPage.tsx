@@ -55,10 +55,13 @@ export function NewsPage() {
   return (
     <div className="pb-12">
       {/* Page Header */}
-      <section className="bg-gradient-to-r from-secondary via-white to-secondary py-12 border-b border-border">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl mb-4">Nieuws</h1>
-          <p className="text-muted-foreground text-lg">
+      <section className="relative overflow-hidden py-12 border-b border-zinc-800 bg-gradient-to-r from-red-900 via-red-655 to-red-900 text-white">
+        <div className="absolute inset-0 bg-black/15 pointer-events-none" />
+        <div className="container mx-auto px-4 relative z-10">
+          <h1 className="text-4xl md:text-5xl font-black mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-100 to-zinc-300 leading-tight">
+            Nieuws
+          </h1>
+          <p className="text-red-100 text-lg">
             Het laatste nieuws over de Top 2000
           </p>
         </div>

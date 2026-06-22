@@ -1,8 +1,9 @@
 import { Carousel } from '../components/Carousel';
 import { Top5List } from '../components/Top5List';
-import { ChevronDown, ChevronRight, ExternalLink, Play, Pause, SkipForward, Radio } from 'lucide-react';
+import { ChevronDown, ChevronRight, ExternalLink, SkipForward, Radio, BarChart3, Mail, Music, Calendar, ListMusic, Users, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { fetchTop2000Years, fetchSongs } from '../data/api';
+import { PlayButton } from '../components/PlayButton';
 
 const articleData = [
   {
@@ -180,13 +181,8 @@ export function HomePage() {
                 </div>
 
                 <div className="flex items-center gap-1.5 border-l border-white/10 pl-3.5">
-                  <button
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="p-1.5 bg-white/5 hover:bg-primary text-white rounded-md transition-all cursor-pointer flex items-center justify-center"
-                    title={isPlaying ? 'Pauze' : 'Speel'}
-                  >
-                    {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-                  </button>
+                  {/* Spotify play button – opens the real Spotify modal */}
+                  <PlayButton title={currentSong.title} artist={currentSong.artist} variant="icon" />
                   <button
                     onClick={handleSkipSong}
                     className="p-1.5 text-muted-foreground hover:text-white transition-colors cursor-pointer flex items-center justify-center"
@@ -256,51 +252,87 @@ export function HomePage() {
 
       <div className="container mx-auto px-4 mt-16">
         {/* Collapsible Sections */}
-        <div className="max-w-4xl mx-auto space-y-3 mb-12">
+        <div className="max-w-4xl mx-auto space-y-4 mb-12">
           {/* Statistics Section */}
-          <div className="bg-card border border-border overflow-hidden shadow-sm">
+          <div className="bg-card/25 backdrop-blur-md border border-white/10 hover:border-primary/20 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary/5 hover:bg-white/5">
             <button
               onClick={() => toggleSection('stats')}
-              className="w-full flex items-center justify-between p-5 hover:bg-secondary transition-colors"
+              className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-all text-left group cursor-pointer"
             >
-              <span className="font-semibold text-lg">Statistieken en weetjes</span>
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20 text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                  <BarChart3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="font-bold text-lg text-white transition-colors">Statistieken en weetjes</span>
+                  <p className="text-xs text-muted-foreground mt-0.5">Leuke feiten en cijfers over de catalogus</p>
+                </div>
+              </div>
               <ChevronDown
-                className={`w-5 h-5 transition-transform ${expandedSections['stats'] ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 text-muted-foreground group-hover:text-white transition-transform duration-300 ${expandedSections['stats'] ? 'rotate-180 text-primary' : ''}`}
               />
             </button>
             {expandedSections['stats'] && (
-              <div className="px-6 pb-6 space-y-3 text-muted-foreground">
-                <p>• De Top 2000 bestaat sinds 1999</p>
-                <p>• Meer dan 15.000 nummers zijn genomineerd door de jaren heen</p>
-                <p>• Bohemian Rhapsody van Queen staat al meer dan 15 jaar op nummer 1</p>
-                <p>• Jaarlijks stemmen meer dan 2 miljoen mensen</p>
+              <div className="px-6 pb-6 pt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3 p-3.5 bg-white/5 border border-white/5 rounded-xl">
+                  <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    De Top 2000 bestaat sinds <strong>1999</strong> en is uitgegroeid tot een nationale traditie.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3 p-3.5 bg-white/5 border border-white/5 rounded-xl">
+                  <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Meer dan <strong>15.000 unieke nummers</strong> zijn genomineerd door de jaren heen.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3 p-3.5 bg-white/5 border border-white/5 rounded-xl">
+                  <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    <strong>Bohemian Rhapsody</strong> van Queen staat al meer dan 15 jaar op nummer 1.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3 p-3.5 bg-white/5 border border-white/5 rounded-xl">
+                  <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Jaarlijks brengen meer dan <strong>2 miljoen mensen</strong> hun stemmen uit.
+                  </p>
+                </div>
               </div>
             )}
           </div>
 
           {/* Newsletter Section */}
-          <div className="bg-card border border-border overflow-hidden shadow-sm">
+          <div className="bg-card/25 backdrop-blur-md border border-white/10 hover:border-primary/20 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary/5 hover:bg-white/5">
             <button
               onClick={() => toggleSection('newsletter')}
-              className="w-full flex items-center justify-between p-5 hover:bg-secondary transition-colors"
+              className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-all text-left group cursor-pointer"
             >
-              <span className="font-semibold text-lg">Blijf op de hoogte</span>
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20 text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="font-bold text-lg text-white transition-colors">Blijf op de hoogte</span>
+                  <p className="text-xs text-muted-foreground mt-0.5">Ontvang updates over stemmaanden en nieuws</p>
+                </div>
+              </div>
               <ChevronDown
-                className={`w-5 h-5 transition-transform ${expandedSections['newsletter'] ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 text-muted-foreground group-hover:text-white transition-transform duration-300 ${expandedSections['newsletter'] ? 'rotate-180 text-primary' : ''}`}
               />
             </button>
             {expandedSections['newsletter'] && (
-              <div className="px-6 pb-6">
-                <p className="text-muted-foreground mb-4">
-                  Ontvang updates over de Top 2000, stem-mogelijkheden en exclusieve content.
+              <div className="px-6 pb-6 pt-2">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Meld je aan voor onze nieuwsbrief en ontvang updates over de start van de stemmaand, evenementen en exclusieve Top 2000 content.
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="email"
                     placeholder="Jouw e-mailadres"
-                    className="flex-grow px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input-background"
+                    className="flex-grow pl-4 pr-4 py-3 border border-white/10 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-white/5 text-white placeholder:text-muted-foreground/60 transition-all text-sm"
                   />
-                  <button className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                  <button className="bg-primary hover:bg-primary/90 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] text-sm cursor-pointer whitespace-nowrap">
                     Aanmelden
                   </button>
                 </div>
@@ -309,27 +341,48 @@ export function HomePage() {
           </div>
 
           {/* Spotify Playlist Section */}
-          <div className="bg-card border border-border overflow-hidden shadow-sm">
+          <div className="bg-card/25 backdrop-blur-md border border-white/10 hover:border-primary/20 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-primary/5 hover:bg-white/5">
             <button
               onClick={() => toggleSection('spotify')}
-              className="w-full flex items-center justify-between p-5 hover:bg-secondary transition-colors"
+              className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-all text-left group cursor-pointer"
             >
-              <span className="font-semibold text-lg">Luister de Top 2000 op Spotify</span>
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20 text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                  <Music className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="font-bold text-lg text-white transition-colors">Luister de Top 2000 op Spotify</span>
+                  <p className="text-xs text-muted-foreground mt-0.5">Volg direct de officiële playlist</p>
+                </div>
+              </div>
               <ChevronDown
-                className={`w-5 h-5 transition-transform ${expandedSections['spotify'] ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 text-muted-foreground group-hover:text-white transition-transform duration-300 ${expandedSections['spotify'] ? 'rotate-180 text-primary' : ''}`}
               />
             </button>
             {expandedSections['spotify'] && (
-              <div className="px-6 pb-6">
-                <p className="text-muted-foreground mb-4">
-                  De volledige Top 2000 is ook beschikbaar als Spotify playlist. Luister je favoriete nummers wanneer je maar wilt!
+              <div className="px-6 pb-6 pt-2">
+                <p className="text-sm text-muted-foreground mb-4">
+                  De volledige Top 2000 catalogus is ook direct beschikbaar als een complete Spotify-afspeellijst. Luister naar al je favoriete klassiekers waar en wanneer je maar wilt!
                 </p>
                 <a
-                  href="#"
-                  className="inline-flex items-center gap-2 text-primary hover:underline"
+                  href="https://open.spotify.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-between w-full p-4 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 rounded-xl group transition-all"
                 >
-                  Open Spotify playlist
-                  <ExternalLink className="w-4 h-4" />
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg group-hover:scale-105 transition-transform">
+                      <Music className="w-5 h-5 fill-current" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-sm block">NPO Radio 2 Top 2000 Playlist</span>
+                      <span className="text-xs text-emerald-400/70">Open direct in de Spotify-app of browser</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-emerald-500/20 px-3 py-1.5 rounded-lg border border-emerald-500/10 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                    Luister Nu
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </div>
                 </a>
               </div>
             )}
@@ -338,12 +391,12 @@ export function HomePage() {
 
         {/* Articles Section */}
         <div className="max-w-6xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Verhalen achter de muziek</h2>
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-8 tracking-tight relative pl-4 border-l-4 border-primary">Verhalen achter de muziek</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {articleData.map(article => (
               <article
                 key={article.id}
-                className="bg-card border border-border/50 hover:border-primary/50 overflow-hidden hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 cursor-pointer rounded-2xl flex flex-col hover:-translate-y-1 group"
+                className="bg-card/25 backdrop-blur-md border border-white/10 hover:border-primary/30 overflow-hidden hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 cursor-pointer rounded-2xl flex flex-col hover:-translate-y-1.5 group"
               >
                 <div className="aspect-video overflow-hidden relative">
                   <img
@@ -351,15 +404,18 @@ export function HomePage() {
                     alt={article.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  {/* Floating Date Badge */}
+                  <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-md z-10">
+                    {article.date}
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
                 <div className="p-6 flex flex-col flex-grow">
-                  <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">{article.date}</div>
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors line-clamp-2 leading-snug">{article.title}</h3>
-                  <p className="text-muted-foreground text-sm mb-6 flex-grow line-clamp-3 leading-relaxed">{article.description}</p>
-                  <div className="flex items-center gap-1 text-primary font-bold text-sm tracking-wide group-hover:translate-x-1 transition-transform">
+                  <h3 className="text-lg font-black text-white group-hover:text-primary transition-colors leading-snug line-clamp-2 mb-2">{article.title}</h3>
+                  <p className="text-muted-foreground/80 text-sm mb-6 flex-grow line-clamp-3 leading-relaxed">{article.description}</p>
+                  <div className="flex items-center gap-1.5 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1.5 transition-transform duration-200">
                     Lees het verhaal
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
               </article>
@@ -369,24 +425,61 @@ export function HomePage() {
 
         {/* Quick Stats Grid */}
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Top 2000 in cijfers</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-primary text-white p-6 text-center">
-              <div className="text-4xl font-bold mb-1">{yearsCount}</div>
-              <div className="text-sm opacity-90">Jaren Top 2000</div>
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-8 tracking-tight relative pl-4 border-l-4 border-primary">Top 2000 in cijfers</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+
+            {/* Stat 1 */}
+            <div className="bg-card/25 backdrop-blur-md border border-white/10 hover:border-primary/20 rounded-2xl p-6 text-center shadow-lg transition-all duration-300 hover:scale-[1.03] hover:shadow-primary/5 hover:bg-white/5 flex flex-col items-center justify-center relative overflow-hidden group">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 text-primary mb-4 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                <Calendar className="w-6 h-6" />
+              </div>
+              <div className="text-4xl font-black mb-1 bg-clip-text bg-gradient-to-r from-white via-white to-primary/80 tracking-tight">
+                {yearsCount}
+              </div>
+              <div className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                Edities
+              </div>
             </div>
-            <div className="bg-primary text-white p-6 text-center">
-              <div className="text-4xl font-bold mb-1">{songsCount}</div>
-              <div className="text-sm opacity-90">Nummers</div>
+
+            {/* Stat 2 */}
+            <div className="bg-card/25 backdrop-blur-md border border-white/10 hover:border-primary/20 rounded-2xl p-6 text-center shadow-lg transition-all duration-300 hover:scale-[1.03] hover:shadow-primary/5 hover:bg-white/5 flex flex-col items-center justify-center relative overflow-hidden group">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 text-primary mb-4 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                <ListMusic className="w-6 h-6" />
+              </div>
+              <div className="text-4xl font-black mb-1  bg-clip-text bg-gradient-to-r from-white via-white to-primary/80 tracking-tight">
+                {songsCount}
+              </div>
+              <div className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                Nummers
+              </div>
             </div>
-            <div className="bg-primary text-white p-6 text-center">
-              <div className="text-4xl font-bold mb-1">2M+</div>
-              <div className="text-sm opacity-90">Stemmen</div>
+
+            {/* Stat 3 */}
+            <div className="bg-card/25 backdrop-blur-md border border-white/10 hover:border-primary/20 rounded-2xl p-6 text-center shadow-lg transition-all duration-300 hover:scale-[1.03] hover:shadow-primary/5 hover:bg-white/5 flex flex-col items-center justify-center relative overflow-hidden group">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 text-primary mb-4 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                <Users className="w-6 h-6" />
+              </div>
+              <div className="text-4xl font-black mb-1 bg-clip-text bg-gradient-to-r from-white via-white to-primary/80 tracking-tight">
+                2M+
+              </div>
+              <div className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                Stemmen
+              </div>
             </div>
-            <div className="bg-primary text-white p-6 text-center">
-              <div className="text-4xl font-bold mb-1">7</div>
-              <div className="text-sm opacity-90">Dagen</div>
+
+            {/* Stat 4 */}
+            <div className="bg-card/25 backdrop-blur-md border border-white/10 hover:border-primary/20 rounded-2xl p-6 text-center shadow-lg transition-all duration-300 hover:scale-[1.03] hover:shadow-primary/5 hover:bg-white/5 flex flex-col items-center justify-center relative overflow-hidden group">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 text-primary mb-4 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                <Clock className="w-6 h-6" />
+              </div>
+              <div className="text-4xl font-black mb-1 bg-clip-text bg-gradient-to-r from-white via-white to-primary/80 tracking-tight">
+                7
+              </div>
+              <div className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                Dagen Live
+              </div>
             </div>
+
           </div>
         </div>
       </div>

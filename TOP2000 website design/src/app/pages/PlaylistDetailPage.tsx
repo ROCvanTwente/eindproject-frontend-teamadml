@@ -173,11 +173,11 @@ export function PlaylistDetailPage() {
                         {playlist.name}
                     </h1>
 
-                    <p className="text-muted-foreground text-lg mb-2">
+                    <p className="text-red-105 text-lg mb-2">
                         {playlist.description || 'Geen beschrijving'}
                     </p>
 
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-red-200">
                         {playlist.songs.length} nummers • Aangemaakt op{' '}
                         {new Date(playlist.createdAt).toLocaleDateString('nl-NL')}
                     </p>

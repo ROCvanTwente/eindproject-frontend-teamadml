@@ -54,6 +54,7 @@ export type BackendArtist = {
   photo?: string; // added to match backend
   wikiUrl?: string;
   numberOfSongs?: number;
+  songs?: BackendSong[];
 };
 
 export type BackendSong = {
@@ -78,6 +79,12 @@ export type BackendTop2000Entry = {
   song: BackendSong;
 };
 
+export type SongRanking = {
+  songId: number;
+  year: number;
+  position: number;
+};
+
 export const API_ENDPOINTS = {
   artists: '/api/artists',
   songs: '/api/songs',
@@ -94,7 +101,27 @@ function getResponseMessage(url: string, status: number, body: string) {
   return `${url} returned ${status}.`;
 }
 
+const activeGetRequests = new Map<string, Promise<any>>();
+
 async function fetchJson<T>(
+  url: string,
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+  bodyData?: unknown
+): Promise<ApiResult<T>> {
+  if (method === 'GET') {
+    let pending = activeGetRequests.get(url);
+    if (!pending) {
+      pending = fetchJsonImpl<T>(url, method, bodyData);
+      activeGetRequests.set(url, pending);
+      const cleanUp = () => activeGetRequests.delete(url);
+      pending.then(cleanUp, cleanUp);
+    }
+    return pending;
+  }
+  return fetchJsonImpl<T>(url, method, bodyData);
+}
+
+async function fetchJsonImpl<T>(
   url: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
   bodyData?: unknown
@@ -238,8 +265,112 @@ export function fetchSongs() {
   return fetchJson<BackendSong[]>(API_ENDPOINTS.songs);
 }
 
-export function fetchTop2000Years() {
-  return fetchJson<number[]>(API_ENDPOINTS.top2000);
+export async function fetchArtistForDetail(id: number): Promise<ApiResult<BackendArtist>> {
+  const result = await fetchJson<BackendArtist & { wiki?: string }>(`${API_ENDPOINTS.artists}/${id}`);
+  if (result.ok && result.data) {
+    const data = result.data;
+    const mappedSongs = (data.songs || []).map(song => ({
+      ...song,
+      albumCover: song.albumCover ?? song.imgUrl,
+      imgUrl: song.imgUrl ?? song.albumCover,
+      lyricsPreview: song.lyricsPreview ?? song.lyrics,
+      lyrics: song.lyrics ?? song.lyricsPreview,
+      artistName: song.artistName ?? data.name,
+    }));
+    return {
+      ...result,
+      data: {
+        ...data,
+        bio: data.bio ?? data.biography,
+        biography: data.biography ?? data.bio,
+        photoUrl: data.photoUrl ?? data.photo,
+        photo: data.photo ?? data.photoUrl,
+        wikiUrl: data.wikiUrl ?? data.wiki,
+        songs: mappedSongs,
+      }
+    };
+  }
+  return result;
+}
+
+export async function fetchSongsByArtist(artistId: number, artistName?: string): Promise<BackendSong[]> {
+  const result = await fetchJson<BackendSong[]>(`${API_ENDPOINTS.songs}/by-artist/${artistId}`);
+  if (result.ok && result.data) {
+    return result.data.map(song => ({
+      ...song,
+      albumCover: song.albumCover ?? song.imgUrl,
+      imgUrl: song.imgUrl ?? song.albumCover,
+      lyricsPreview: song.lyricsPreview ?? song.lyrics,
+      lyrics: song.lyrics ?? song.lyricsPreview,
+      artistName: song.artistName ?? artistName,
+    }));
+  }
+  return [];
+}
+
+export async function fetchSongForDetail(id: number): Promise<ApiResult<BackendSong & { rankings?: SongRanking[] }>> {
+  const result = await fetchJson<BackendSong & { top2000Entries?: any[] }>(`${API_ENDPOINTS.songs}/${id}`);
+  if (result.ok && result.data) {
+    const data = result.data;
+    const rankings: SongRanking[] = (data.top2000Entries || []).map(entry => ({
+      songId: entry.songId,
+      year: entry.year,
+      position: entry.position
+    }));
+    return {
+      ...result,
+      data: {
+        ...data,
+        albumCover: data.albumCover ?? data.imgUrl,
+        imgUrl: data.imgUrl ?? data.albumCover,
+        lyricsPreview: data.lyricsPreview ?? data.lyrics,
+        lyrics: data.lyrics ?? data.lyricsPreview,
+        artistName: data.artistName ?? data.artist?.name,
+        rankings
+      }
+    };
+  }
+  return result as ApiResult<BackendSong & { rankings?: SongRanking[] }>;
+}
+
+export async function fetchSongRankings(songId: number): Promise<ApiResult<SongRanking[]>> {
+  const result = await fetchJson<BackendSong & { top2000Entries?: any[] }>(`${API_ENDPOINTS.songs}/${songId}`);
+  if (result.ok && result.data) {
+    const rankings: SongRanking[] = (result.data.top2000Entries || []).map(entry => ({
+      songId: entry.songId,
+      year: entry.year,
+      position: entry.position
+    }));
+    return {
+      ok: true,
+      url: result.url,
+      status: result.status,
+      data: rankings
+    };
+  }
+  return {
+    ok: false,
+    url: result.url,
+    status: result.status,
+    message: result.ok ? "Geen rankings gevonden." : (result as any).message
+  };
+}
+
+let yearsCache: ApiResult<number[]> | null = null;
+const top2000Cache = new Map<number, EndpointLoadResult<BackendTop2000Entry>>();
+
+export function clearApiCaches() {
+  yearsCache = null;
+  top2000Cache.clear();
+}
+
+export async function fetchTop2000Years() {
+  if (yearsCache) return yearsCache;
+  const result = await fetchJson<number[]>(API_ENDPOINTS.top2000);
+  if (result.ok) {
+    yearsCache = result;
+  }
+  return result;
 }
 
 export function fetchTop2000ByYear(year: number) {
@@ -247,6 +378,9 @@ export function fetchTop2000ByYear(year: number) {
 }
 
 export async function loadTop2000ByYear(year: number) {
+  if (top2000Cache.has(year)) {
+    return top2000Cache.get(year)!;
+  }
   const result = await loadArrayEndpoint(() => fetchTop2000ByYear(year), `Muzieklijst voor ${year} kon niet worden geladen.`);
   if (result.ok && result.data) {
     result.data = result.data.map(entry => ({
@@ -260,6 +394,7 @@ export async function loadTop2000ByYear(year: number) {
         artistName: entry.song.artistName ?? entry.song.artist?.name,
       } : entry.song
     }));
+    top2000Cache.set(year, result);
   }
   return result;
 }
@@ -426,4 +561,92 @@ export function approveRoleRequest(id: number) {
 
 export function rejectRoleRequest(id: number) {
   return fetchJson<void>(`/api/users/reject-role/${id}`, 'POST');
+}
+
+export interface VoteResultEntry {
+  songId: number;
+  title: string;
+  artistName: string;
+  imgUrl?: string;
+  voteCount: number;
+}
+
+export function fetchMyVotes() {
+  return fetchJson<number[]>('/api/votes/my-votes');
+}
+
+export function submitVotes(songIds: number[]) {
+  return fetchJson<{ message: string }>('/api/votes', 'POST', songIds);
+}
+
+export function fetchVoteResults() {
+  return fetchJson<VoteResultEntry[]>('/api/votes/results');
+}
+
+export interface StijgerDto {
+  songId: number;
+  title: string;
+  artistName: string;
+  currentPosition: number;
+  previousPosition: number;
+  change: number;
+}
+
+export interface DalerDto {
+  songId: number;
+  title: string;
+  artistName: string;
+  currentPosition: number;
+  previousPosition: number;
+  change: number;
+}
+
+export interface NieuwkomerDto {
+  songId: number;
+  title: string;
+  artistName: string;
+  position: number;
+}
+
+export interface InAlleEditiesDto {
+  songId: number;
+  title: string;
+  artistName: string;
+  position: number;
+}
+
+export interface VerdwenenNummerDto {
+  songId: number;
+  title: string;
+  artistName: string;
+  previousPosition: number;
+}
+
+export interface TopArtiestDto {
+  artistName: string;
+  songCount: number;
+}
+
+export function fetchStijgers(year: number) {
+  return fetchJson<StijgerDto[]>(`/api/top2000/statistics/stijgers/${year}`);
+}
+
+export function fetchDalers(year: number) {
+  return fetchJson<DalerDto[]>(`/api/top2000/statistics/dalers/${year}`);
+}
+
+export function fetchNieuwkomers(year: number) {
+  return fetchJson<NieuwkomerDto[]>(`/api/top2000/statistics/nieuwkomers/${year}`);
+}
+
+export function fetchInAlleEdities(year: number) {
+  return fetchJson<InAlleEditiesDto[]>(`/api/top2000/statistics/in-alle-edities/${year}`);
+}
+
+export function fetchVerdwenenNummers(year: number) {
+  return fetchJson<VerdwenenNummerDto[]>(`/api/top2000/statistics/verdwenen-nummers/${year}`);
+}
+
+export function fetchTopArtiesten(year: number) {
+  return fetchJson<TopArtiestDto[]>(`/api/top2000/statistics/top-artiesten/${year}`);
 }
