@@ -1,7 +1,7 @@
 // ─── Spotify PKCE Auth helpers ────────────────────────────────────────────────
 // PKCE = Proof Key for Code Exchange — safe for SPAs (no client secret needed)
 
-export const SPOTIFY_CLIENT_ID = 'c06806b27a6d490fafb1e0d4d4b104e5';
+export const SPOTIFY_CLIENT_ID = '76bd4aa5d0e4419a8b6f72d6cd7773c2';
 
 // !! These URIs must be added EXACTLY as shown in the Spotify Dashboard under "Redirect URIs" !!
 // Localhost:  http://localhost:5174/spotify
@@ -161,6 +161,11 @@ export interface SpotifyTrack {
 const searchCache = new Map<string, SpotifyTrack | null>();
 let rateLimitResetAt = 0;
 
+function setRateLimitReset(timestamp: number) {
+  rateLimitResetAt = timestamp;
+  (globalThis as any).__spotifyRateLimitResetAt = timestamp;
+}
+
 function normalizeText(text: string): string {
   return text
     .normalize('NFD')
@@ -187,26 +192,57 @@ function sanitizeSearchQuery(title: string, artist: string) {
   return { cleanTitle, cleanArtist };
 }
 
-async function trySearch(query: string, token: string): Promise<SpotifyTrack | null> {
-  if (Date.now() < rateLimitResetAt) return null;
-  
+interface SearchResult {
+  ok: boolean;
+  track: SpotifyTrack | null;
+  rateLimited: boolean;
+}
+
+async function trySearch(query: string, token: string, retryCount = 0): Promise<SearchResult> {
+  if (Date.now() < rateLimitResetAt) {
+    // If we haven't retried yet, wait for the rate limit to reset then try
+    if (retryCount === 0) {
+      const waitMs = rateLimitResetAt - Date.now();
+      if (waitMs > 0 && waitMs <= 10_000) {
+        console.log(`[Spotify] Rate limited — waiting ${Math.ceil(waitMs / 1000)}s before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitMs + 500));
+        return trySearch(query, token, retryCount + 1);
+      }
+    }
+    return { ok: false, track: null, rateLimited: true };
+  }
+
   try {
     const res = await fetch(
       `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    
+
     if (res.status === 429) {
-      const retryAfter = parseInt(res.headers.get('Retry-After') || '30', 10);
-      rateLimitResetAt = Date.now() + (retryAfter * 1000);
-      return null;
+      const retryAfter = parseInt(res.headers.get('Retry-After') || '5', 10);
+      const waitMs = retryAfter * 1000;
+      setRateLimitReset(Date.now() + waitMs);
+      console.warn(`[Spotify] 429 Rate Limited. Retry-After: ${retryAfter}s`);
+
+      // Auto-retry once if the wait is reasonable (≤10s)
+      if (retryCount === 0 && waitMs <= 10_000) {
+        console.log(`[Spotify] Waiting ${retryAfter}s then retrying...`);
+        await new Promise(resolve => setTimeout(resolve, waitMs + 500));
+        return trySearch(query, token, retryCount + 1);
+      }
+      return { ok: false, track: null, rateLimited: true };
     }
-    
-    if (!res.ok) return null;
+
+    if (!res.ok) {
+      return { ok: false, track: null, rateLimited: false };
+    }
+
     const data = await res.json();
-    return data.tracks?.items?.[0] ?? null;
-  } catch {
-    return null;
+    const track = data.tracks?.items?.[0] ?? null;
+    return { ok: true, track, rateLimited: false };
+  } catch (err) {
+    console.error('[Spotify Search Error]', err);
+    return { ok: false, track: null, rateLimited: false };
   }
 }
 
@@ -218,15 +254,19 @@ export async function searchTrack(title: string, artist: string, token: string):
     return searchCache.get(cacheKey) ?? null;
   }
 
-  // Block early if still rate limited
+  // If rate limited, trySearch will auto-wait-and-retry for short waits
   if (Date.now() < rateLimitResetAt) {
-    const waitSec = Math.ceil((rateLimitResetAt - Date.now()) / 1000);
-    console.warn(`Spotify rate limited for ${waitSec}s more. Skipping search.`);
-    return null;
+    const waitMs = rateLimitResetAt - Date.now();
+    if (waitMs > 10_000) {
+      const waitSec = Math.ceil(waitMs / 1000);
+      console.warn(`[Spotify] Rate limited for ${waitSec}s more. Skipping search.`);
+      return null;
+    }
+    // Short wait — trySearch will handle the delay automatically
   }
 
   const { cleanTitle, cleanArtist } = sanitizeSearchQuery(title, artist);
-  const normTitle  = normalizeText(cleanTitle);
+  const normTitle = normalizeText(cleanTitle);
   const normArtist = normalizeText(cleanArtist);
 
   // Max 2 strategies to stay well within rate limits
@@ -235,14 +275,30 @@ export async function searchTrack(title: string, artist: string, token: string):
     `${normTitle} ${normArtist}`,
   ];
 
+  let lastResultWasErrorOrRateLimit = false;
+
   for (const query of strategies) {
     const result = await trySearch(query, token);
-    if (!result) continue;
-    searchCache.set(cacheKey, result); // cache found track
-    return result;
+
+    if (result.ok) {
+      if (result.track) {
+        searchCache.set(cacheKey, result.track); // cache found track
+        return result.track;
+      }
+    } else {
+      lastResultWasErrorOrRateLimit = true;
+      if (result.rateLimited) {
+        // If we hit a rate limit, stop trying other queries immediately to prevent spamming
+        break;
+      }
+    }
   }
 
-  // Cache the miss so we don't search again this session
-  searchCache.set(cacheKey, null);
+  // Only cache the miss (null) if we successfully queried the search API and got 0 results.
+  // This prevents caching a rate-limited failure or server error as a permanent miss.
+  if (!lastResultWasErrorOrRateLimit) {
+    searchCache.set(cacheKey, null);
+  }
+
   return null;
 }
