@@ -50,14 +50,16 @@ export function PlaylistDetailPage() {
             const data: PlaylistDetail = await response.json();
             setPlaylist(data);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Er is iets misgegaan.');
+            setError(
+                err instanceof Error ? err.message : 'Er is iets misgegaan.'
+            );
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadPlaylist();
+        void loadPlaylist();
     }, [id]);
 
     const handleRemoveSong = async (songId: number) => {
@@ -65,25 +67,48 @@ export function PlaylistDetailPage() {
             return;
         }
 
-        if (!confirm('Weet je zeker dat je dit nummer wilt verwijderen uit de playlist?')) {
+        if (
+            !confirm(
+                'Weet je zeker dat je dit nummer wilt verwijderen uit de playlist?'
+            )
+        ) {
             return;
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/playlists/${id}/songs/${songId}`, {
-                method: 'DELETE'
-            });
+            const response = await fetch(
+                `${API_BASE_URL}/api/playlists/${id}/songs/${songId}`,
+                {
+                    method: 'DELETE'
+                }
+            );
 
             if (!response.ok) {
-                throw new Error('Nummer kon niet worden verwijderd uit de playlist.');
+                const responseText = await response.text();
+
+                let backendMessage = '';
+
+                try {
+                    const data = JSON.parse(responseText);
+                    backendMessage = data.message ?? '';
+                } catch {
+                    backendMessage = responseText;
+                }
+
+                throw new Error(
+                    backendMessage ||
+                    'Nummer kon niet worden verwijderd uit de playlist.'
+                );
             }
 
             setPlaylist((currentPlaylist) => {
                 if (!currentPlaylist) {
-                    return currentPlaylist;
+                    return null;
                 }
 
-                const updatedSongs = currentPlaylist.songs.filter((song) => song.songId !== songId);
+                const updatedSongs = currentPlaylist.songs.filter(
+                    (song) => song.songId !== songId
+                );
 
                 return {
                     ...currentPlaylist,
@@ -92,20 +117,22 @@ export function PlaylistDetailPage() {
                 };
             });
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Er is iets misgegaan.');
+            alert(
+                err instanceof Error
+                    ? err.message
+                    : 'Er is iets misgegaan.'
+            );
         }
     };
 
     if (loading) {
         return (
             <div className="pb-12">
-                <section className="relative overflow-hidden py-12 border-b border-zinc-800 bg-gradient-to-r from-red-900 via-red-655 to-red-900 text-white">
-                    <div className="absolute inset-0 bg-black/15 pointer-events-none" />
-                    <div className="container mx-auto px-4 relative z-10">
-                        <h1 className="text-4xl md:text-5xl font-black mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-100 to-zinc-300 leading-tight">Playlist laden...</h1>
-                        <p className="text-red-100 text-lg">
-                            Even geduld terwijl de playlist wordt opgehaald.
-                        </p>
+                <section className="bg-gradient-to-r from-secondary via-white to-secondary py-12 border-b border-border">
+                    <div className="container mx-auto px-4">
+                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                            Playlist laden...
+                        </h1>
                     </div>
                 </section>
             </div>
@@ -115,11 +142,12 @@ export function PlaylistDetailPage() {
     if (error || !playlist) {
         return (
             <div className="pb-12">
-                <section className="relative overflow-hidden py-12 border-b border-zinc-800 bg-gradient-to-r from-red-900 via-red-655 to-red-900 text-white">
-                    <div className="absolute inset-0 bg-black/15 pointer-events-none" />
-                    <div className="container mx-auto px-4 relative z-10">
-                        <h1 className="text-4xl md:text-5xl font-black mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-100 to-zinc-300 leading-tight">Playlist niet gevonden</h1>
-                        <p className="text-red-100 text-lg">
+                <section className="bg-gradient-to-r from-secondary via-white to-secondary py-12 border-b border-border">
+                    <div className="container mx-auto px-4">
+                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                            Playlist niet gevonden
+                        </h1>
+                        <p className="text-muted-foreground text-lg">
                             {error || 'Deze playlist bestaat niet.'}
                         </p>
                     </div>
@@ -128,7 +156,7 @@ export function PlaylistDetailPage() {
                 <div className="container mx-auto px-4 mt-12">
                     <Link
                         to="/playlists"
-                        className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-white px-6 py-3 rounded-lg hover:shadow-xl transition-all"
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-white px-6 py-3 rounded-lg"
                     >
                         Terug naar playlists
                     </Link>
@@ -139,10 +167,11 @@ export function PlaylistDetailPage() {
 
     return (
         <div className="pb-12">
-            <section className="relative overflow-hidden py-12 border-b border-zinc-800 bg-gradient-to-r from-red-900 via-red-655 to-red-900 text-white">
-                <div className="absolute inset-0 bg-black/15 pointer-events-none" />
-                <div className="container mx-auto px-4 relative z-10">
-                    <h1 className="text-4xl md:text-5xl font-black mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-100 to-zinc-300 leading-tight">{playlist.name}</h1>
+            <section className="bg-gradient-to-r from-secondary via-white to-secondary py-12 border-b border-border">
+                <div className="container mx-auto px-4">
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                        {playlist.name}
+                    </h1>
 
                     <p className="text-red-105 text-lg mb-2">
                         {playlist.description || 'Geen beschrijving'}
@@ -158,7 +187,7 @@ export function PlaylistDetailPage() {
             <div className="container mx-auto px-4 mt-12">
                 <div className="mb-6 flex gap-3">
                     <Link
-                        to="/nummers"
+                        to={`/nummers?playlistId=${playlist.id}`}
                         className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-white px-6 py-3 rounded-lg hover:shadow-xl transition-all"
                     >
                         <Plus className="w-5 h-5" />
@@ -191,7 +220,9 @@ export function PlaylistDetailPage() {
                                     {playlist.songs.map((song, index) => (
                                         <tr
                                             key={song.songId}
-                                            className={index % 2 === 0 ? 'bg-secondary/30' : ''}
+                                            className={
+                                                index % 2 === 0 ? 'bg-secondary/30' : ''
+                                            }
                                         >
                                             <td className="px-4 py-3 text-muted-foreground">
                                                 {index + 1}
@@ -234,7 +265,10 @@ export function PlaylistDetailPage() {
                                                     )}
 
                                                     <button
-                                                        onClick={() => handleRemoveSong(song.songId)}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            handleRemoveSong(song.songId)
+                                                        }
                                                         className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                                                         title="Verwijderen uit playlist"
                                                     >
@@ -252,14 +286,16 @@ export function PlaylistDetailPage() {
                     <div className="bg-card border border-border rounded-lg p-12 text-center">
                         <Music className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
 
-                        <h3 className="text-xl font-bold mb-2">Geen nummers in deze playlist</h3>
+                        <h3 className="text-xl font-bold mb-2">
+                            Geen nummers in deze playlist
+                        </h3>
 
                         <p className="text-muted-foreground mb-6">
                             Voeg nummers toe aan je playlist om te beginnen!
                         </p>
 
                         <Link
-                            to="/nummers"
+                            to={`/nummers?playlistId=${playlist.id}`}
                             className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-white px-6 py-3 rounded-lg hover:shadow-xl transition-all"
                         >
                             <Plus className="w-5 h-5" />

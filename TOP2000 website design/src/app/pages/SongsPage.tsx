@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   Loader2,
@@ -13,10 +13,14 @@ import {
   Calendar,
   TrendingUp,
   Sparkles,
-  Award
+  Award,
+  Check,
+  Plus
 } from 'lucide-react';
 import { type BackendSong, type BackendArtist } from '../data/api';
 import { useCatalog } from '../context/CatalogContext';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 
 type FetchState = 'idle' | 'loading' | 'success' | 'error';
 type PageSize = 10 | 50 | 100 | 'all';
@@ -29,6 +33,11 @@ const PAGE_SIZE_OPTIONS: { label: string; value: PageSize }[] = [
 ];
 
 export function SongsPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const playlistId = searchParams.get('playlistId');
+  const isAddingToPlaylist = playlistId !== null;
+
   const [titleSearch, setTitleSearch] = useState('');
   const [artistFilter, setArtistFilter] = useState('');
   const [decadeFilter, setDecadeFilter] = useState('');
@@ -36,12 +45,67 @@ export function SongsPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  const [addingSongId, setAddingSongId] = useState<number | null>(null);
+  const [addedSongIds, setAddedSongIds] = useState<number[]>([]);
+  const [addMessage, setAddMessage] = useState('');
+  const [addMessageType, setAddMessageType] = useState<'success' | 'error' | ''>('');
+
   const { songs, artists, isLoading, error } = useCatalog();
   const fetchState: FetchState = isLoading ? 'loading' : error ? 'error' : 'success';
   const errorMessage = error ?? '';
   const [pageSize, setPageSize] = useState<PageSize>(50);
   const [visibleCount, setVisibleCount] = useState(50);
   const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null);
+
+  const handleAddToPlaylist = async (songId: number) => {
+    if (!playlistId) return;
+
+    try {
+      setAddingSongId(songId);
+      setAddMessage('');
+      setAddMessageType('');
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/playlists/${playlistId}/songs/${songId}`,
+        {
+          method: 'POST'
+        }
+      );
+
+      const responseText = await response.text();
+      let backendMessage = '';
+      try {
+        const responseData = JSON.parse(responseText);
+        backendMessage = responseData.message ?? '';
+      } catch {
+        backendMessage = responseText;
+      }
+
+      if (response.status === 409) {
+        setAddMessageType('error');
+        setAddMessage(backendMessage || 'Dit nummer staat al in deze playlist.');
+        return;
+      }
+
+      if (!response.ok) {
+        setAddMessageType('error');
+        setAddMessage(backendMessage || `Backend gaf foutcode ${response.status} terug.`);
+        return;
+      }
+
+      setAddedSongIds((current) => {
+        if (current.includes(songId)) return current;
+        return [...current, songId];
+      });
+      setAddMessageType('success');
+      setAddMessage('Nummer succesvol toegevoegd aan playlist!');
+    } catch (err) {
+      setAddMessageType('error');
+      setAddMessage(err instanceof Error ? err.message : 'Er is iets misgegaan.');
+    } finally {
+      setAddingSongId(null);
+    }
+  };
 
   // Back to top button scroll listener
   useEffect(() => {
@@ -198,7 +262,35 @@ export function SongsPage() {
         </div>
       </section>
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 mt-8">
+        {isAddingToPlaylist && (
+          <div className="max-w-4xl mx-auto mb-8 bg-primary/10 border border-primary/20 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+            <div>
+              <p className="font-bold text-lg text-white">Nummers toevoegen aan playlist</p>
+              <p className="text-sm text-zinc-400 mt-1">
+                Klik op &quot;Toevoegen&quot; bij een nummer om het aan je playlist toe te voegen.
+              </p>
+              {addMessage && (
+                <p
+                  className={`mt-3 inline-block rounded-xl border px-3 py-2 text-xs font-semibold ${
+                    addMessageType === 'success'
+                      ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+                      : 'border-primary/20 bg-primary/10 text-primary'
+                  }`}
+                >
+                  {addMessage}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(`/playlist/${playlistId}`)}
+              className="bg-secondary hover:bg-white/10 text-foreground px-5 py-2.5 rounded-xl font-bold transition-all text-sm border border-white/5 cursor-pointer whitespace-nowrap"
+            >
+              Terug naar playlist
+            </button>
+          </div>
+        )}
 
         {/* Loading skeletons */}
         {fetchState === 'loading' && (
@@ -481,121 +573,225 @@ export function SongsPage() {
                 {viewMode === 'grid' ? (
                   /* Grid view mode */
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {visibleSongs.map(song => (
-                      <Link
-                        key={song.songId}
-                        to={`/nummer/${song.songId}`}
-                        className="group bg-zinc-900/40 backdrop-blur-md border border-zinc-850 hover:border-primary/45 rounded-2xl overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
-                      >
-                        {/* Cover image art */}
-                        <div className="aspect-square overflow-hidden bg-zinc-950 relative shadow-inner">
-                          {song.albumCover ? (
-                            <img
-                              src={song.albumCover}
-                              alt={song.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                              <Music className="w-16 h-16 text-zinc-700 group-hover:text-primary/65 transition-colors" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                    {visibleSongs.map(song => {
+                      const isAdded = addedSongIds.includes(song.songId);
+                      const isAdding = addingSongId === song.songId;
 
-                          {/* Decade/Year badge overlay */}
-                          {song.releaseYear && (
-                            <div className="absolute top-3 right-3 bg-zinc-950/85 backdrop-blur border border-zinc-800/80 px-2 py-0.5 rounded text-xs text-zinc-300 font-semibold shadow">
-                              {song.releaseYear}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Card body content */}
-                        <div className="p-4 flex-grow flex flex-col justify-between">
-                          <div>
-                            <h4 className="font-bold text-base text-zinc-100 group-hover:text-primary transition-colors line-clamp-1 mb-1">
-                              {song.title}
-                            </h4>
-                            <p className="text-xs text-zinc-400 truncate">
-                              {song.artistName ?? `Artiest ${song.artistId}`}
-                            </p>
-                          </div>
-
-                          <div className="mt-4 flex items-center justify-between text-xs border-t border-zinc-800/40 pt-3">
-                            <span className="text-zinc-500">Top 2000</span>
-                            {typeof song.timesListed === 'number' && song.timesListed > 0 ? (
-                              <span className="font-bold text-primary flex items-center gap-0.5">
-                                <Award className="w-3.5 h-3.5" /> {song.timesListed}×
-                              </span>
+                      const cardContent = (
+                        <>
+                          {/* Cover image art */}
+                          <div className="aspect-square overflow-hidden bg-zinc-950 relative shadow-inner">
+                            {song.albumCover ? (
+                              <img
+                                src={song.albumCover}
+                                alt={song.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                loading="lazy"
+                              />
                             ) : (
-                              <span className="text-zinc-500 font-medium">0×</span>
+                              <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                                <Music className="w-16 h-16 text-zinc-700 group-hover:text-primary/65 transition-colors" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+
+                            {/* Decade/Year badge overlay */}
+                            {song.releaseYear && (
+                              <div className="absolute top-3 right-3 bg-zinc-950/85 backdrop-blur border border-zinc-800/80 px-2 py-0.5 rounded text-xs text-zinc-300 font-semibold shadow">
+                                {song.releaseYear}
+                              </div>
                             )}
                           </div>
-                        </div>
-                      </Link>
-                    ))}
+
+                          {/* Card body content */}
+                          <div className="p-4 flex-grow flex flex-col justify-between">
+                            <div>
+                              <h4 className="font-bold text-base text-zinc-100 group-hover:text-primary transition-colors line-clamp-1 mb-1">
+                                {song.title}
+                              </h4>
+                              <p className="text-xs text-zinc-400 truncate">
+                                {song.artistName ?? `Artiest ${song.artistId}`}
+                              </p>
+                            </div>
+
+                            <div className="mt-4 flex items-center justify-between text-xs border-t border-zinc-800/40 pt-3">
+                              <span className="text-zinc-500">Top 2000</span>
+                              {typeof song.timesListed === 'number' && song.timesListed > 0 ? (
+                                <span className="font-bold text-primary flex items-center gap-0.5">
+                                  <Award className="w-3.5 h-3.5" /> {song.timesListed}×
+                                </span>
+                              ) : (
+                                <span className="text-zinc-500 font-medium">0×</span>
+                              )}
+                            </div>
+
+                            {isAddingToPlaylist && (
+                              <button
+                                type="button"
+                                disabled={isAdding || isAdded}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleAddToPlaylist(song.songId);
+                                }}
+                                className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-accent text-white px-4 py-2.5 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed text-xs cursor-pointer"
+                              >
+                                {isAdded ? (
+                                  <>
+                                    <Check className="w-4 h-4 text-emerald-450" />
+                                    Toegevoegd
+                                  </>
+                                ) : isAdding ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Toevoegen...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="w-4 h-4" />
+                                    Toevoegen
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      );
+
+                      if (isAddingToPlaylist) {
+                        return (
+                          <div
+                            key={song.songId}
+                            className="group bg-zinc-900/40 backdrop-blur-md border border-zinc-850 hover:border-primary/45 rounded-2xl overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                          >
+                            {cardContent}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <Link
+                          key={song.songId}
+                          to={`/nummer/${song.songId}`}
+                          className="group bg-zinc-900/40 backdrop-blur-md border border-zinc-850 hover:border-primary/45 rounded-2xl overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                        >
+                          {cardContent}
+                        </Link>
+                      );
+                    })}
                   </div>
                 ) : (
                   /* List view mode */
                   <div className="max-w-4xl mx-auto space-y-3">
-                    {visibleSongs.map((song, index) => (
-                      <Link
-                        key={song.songId}
-                        to={`/nummer/${song.songId}`}
-                        className="flex items-center gap-4 bg-zinc-900/40 backdrop-blur-md border border-zinc-850 hover:border-primary/45 hover:bg-zinc-800/30 rounded-xl p-3 shadow-md transition-all group"
-                      >
-                        {/* Index numbers */}
-                        <span className="text-zinc-500 text-xs font-semibold w-5 text-right hidden sm:block group-hover:text-primary group-hover:hidden">
-                          {index + 1}
-                        </span>
-                        <Music className="w-5 h-5 text-primary/75 hidden group-hover:block flex-shrink-0 text-right" />
+                    {visibleSongs.map((song, index) => {
+                      const isAdded = addedSongIds.includes(song.songId);
+                      const isAdding = addingSongId === song.songId;
 
-                        {/* Cover thumbnail */}
-                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-950 relative flex-shrink-0 shadow">
-                          {song.albumCover ? (
-                            <img
-                              src={song.albumCover}
-                              alt={song.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                              <Music className="w-6 h-6 text-zinc-700 group-hover:text-primary/60 transition-colors" />
-                            </div>
+                      const itemContent = (
+                        <>
+                          {/* Index numbers */}
+                          <span className="text-zinc-500 text-xs font-semibold w-5 text-right hidden sm:block group-hover:text-primary group-hover:hidden">
+                            {index + 1}
+                          </span>
+                          <Music className="w-5 h-5 text-primary/75 hidden group-hover:block flex-shrink-0 text-right" />
+
+                          {/* Cover thumbnail */}
+                          <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-950 relative flex-shrink-0 shadow">
+                            {song.albumCover ? (
+                              <img
+                                src={song.albumCover}
+                                alt={song.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                                <Music className="w-6 h-6 text-zinc-700 group-hover:text-primary/60 transition-colors" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Title and artist details */}
+                          <div className="flex-grow min-w-0">
+                            <p className="font-bold text-base md:text-lg text-white group-hover:text-primary transition-colors truncate">
+                              {song.title}
+                            </p>
+                            <p className="text-xs md:text-sm text-zinc-400 truncate mt-0.5">
+                              {song.artistName ?? `Artiest ${song.artistId}`}
+                            </p>
+                          </div>
+
+                          {/* Year info */}
+                          {song.releaseYear && (
+                            <span className="flex-shrink-0 text-xs text-zinc-400 bg-zinc-850/50 border border-zinc-800 px-2 py-0.5 rounded font-medium">
+                              {song.releaseYear}
+                            </span>
                           )}
-                        </div>
 
-                        {/* Title and artist details */}
-                        <div className="flex-grow min-w-0">
-                          <p className="font-bold text-base md:text-lg text-white group-hover:text-primary transition-colors truncate">
-                            {song.title}
-                          </p>
-                          <p className="text-xs md:text-sm text-zinc-400 truncate mt-0.5">
-                            {song.artistName ?? `Artiest ${song.artistId}`}
-                          </p>
-                        </div>
+                          {/* Listed times count */}
+                          {typeof song.timesListed === 'number' && song.timesListed > 0 ? (
+                            <span className="flex-shrink-0 text-xs text-zinc-300 bg-zinc-800/80 border border-zinc-700/50 px-2.5 py-1 rounded-full hidden sm:block font-semibold">
+                              {song.timesListed}× genoteerd
+                            </span>
+                          ) : (
+                            <span className="flex-shrink-0 text-xs text-zinc-550 bg-zinc-900/40 border border-zinc-850 px-2.5 py-1 rounded-full hidden sm:block">
+                              0× genoteerd
+                            </span>
+                          )}
 
-                        {/* Year info */}
-                        {song.releaseYear && (
-                          <span className="flex-shrink-0 text-xs text-zinc-400 bg-zinc-850/50 border border-zinc-800 px-2 py-0.5 rounded font-medium">
-                            {song.releaseYear}
-                          </span>
-                        )}
+                          {isAddingToPlaylist && (
+                            <button
+                              type="button"
+                              disabled={isAdding || isAdded}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleAddToPlaylist(song.songId);
+                              }}
+                              className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed text-xs font-bold cursor-pointer"
+                            >
+                              {isAdded ? (
+                                <>
+                                  <Check className="w-4 h-4 text-emerald-400" />
+                                  Toegevoegd
+                                </>
+                              ) : isAdding ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Toevoegen...
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="w-4 h-4" />
+                                  Toevoegen
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </>
+                      );
 
-                        {/* Listed times count */}
-                        {typeof song.timesListed === 'number' && song.timesListed > 0 ? (
-                          <span className="flex-shrink-0 text-xs text-zinc-300 bg-zinc-800/80 border border-zinc-700/50 px-2.5 py-1 rounded-full hidden sm:block font-semibold">
-                            {song.timesListed}× genoteerd
-                          </span>
-                        ) : (
-                          <span className="flex-shrink-0 text-xs text-zinc-550 bg-zinc-900/40 border border-zinc-850 px-2.5 py-1 rounded-full hidden sm:block">
-                            0× genoteerd
-                          </span>
-                        )}
-                      </Link>
-                    ))}
+                      if (isAddingToPlaylist) {
+                        return (
+                          <div
+                            key={song.songId}
+                            className="flex items-center gap-4 bg-zinc-900/40 backdrop-blur-md border border-zinc-850 hover:border-primary/45 hover:bg-zinc-800/30 rounded-xl p-3 shadow-md transition-all group"
+                          >
+                            {itemContent}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <Link
+                          key={song.songId}
+                          to={`/nummer/${song.songId}`}
+                          className="flex items-center gap-4 bg-zinc-900/40 backdrop-blur-md border border-zinc-850 hover:border-primary/45 hover:bg-zinc-800/30 rounded-xl p-3 shadow-md transition-all group"
+                        >
+                          {itemContent}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
 
