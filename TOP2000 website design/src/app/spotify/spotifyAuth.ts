@@ -192,7 +192,13 @@ function sanitizeSearchQuery(title: string, artist: string) {
   return { cleanTitle, cleanArtist };
 }
 
-async function trySearch(query: string, token: string, retryCount = 0): Promise<SpotifyTrack | null> {
+interface SearchResult {
+  ok: boolean;
+  track: SpotifyTrack | null;
+  rateLimited: boolean;
+}
+
+async function trySearch(query: string, token: string, retryCount = 0): Promise<SearchResult> {
   if (Date.now() < rateLimitResetAt) {
     // If we haven't retried yet, wait for the rate limit to reset then try
     if (retryCount === 0) {
@@ -203,7 +209,7 @@ async function trySearch(query: string, token: string, retryCount = 0): Promise<
         return trySearch(query, token, retryCount + 1);
       }
     }
-    return null;
+    return { ok: false, track: null, rateLimited: true };
   }
   
   try {
@@ -224,14 +230,19 @@ async function trySearch(query: string, token: string, retryCount = 0): Promise<
         await new Promise(resolve => setTimeout(resolve, waitMs + 500));
         return trySearch(query, token, retryCount + 1);
       }
-      return null;
+      return { ok: false, track: null, rateLimited: true };
     }
     
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return { ok: false, track: null, rateLimited: false };
+    }
+    
     const data = await res.json();
-    return data.tracks?.items?.[0] ?? null;
-  } catch {
-    return null;
+    const track = data.tracks?.items?.[0] ?? null;
+    return { ok: true, track, rateLimited: false };
+  } catch (err) {
+    console.error('[Spotify Search Error]', err);
+    return { ok: false, track: null, rateLimited: false };
   }
 }
 
@@ -264,14 +275,30 @@ export async function searchTrack(title: string, artist: string, token: string):
     `${normTitle} ${normArtist}`,
   ];
 
+  let lastResultWasErrorOrRateLimit = false;
+
   for (const query of strategies) {
     const result = await trySearch(query, token);
-    if (!result) continue;
-    searchCache.set(cacheKey, result); // cache found track
-    return result;
+    
+    if (result.ok) {
+      if (result.track) {
+        searchCache.set(cacheKey, result.track); // cache found track
+        return result.track;
+      }
+    } else {
+      lastResultWasErrorOrRateLimit = true;
+      if (result.rateLimited) {
+        // If we hit a rate limit, stop trying other queries immediately to prevent spamming
+        break;
+      }
+    }
   }
 
-  // Cache the miss so we don't search again this session
-  searchCache.set(cacheKey, null);
+  // Only cache the miss (null) if we successfully queried the search API and got 0 results.
+  // This prevents caching a rate-limited failure or server error as a permanent miss.
+  if (!lastResultWasErrorOrRateLimit) {
+    searchCache.set(cacheKey, null);
+  }
+  
   return null;
 }
